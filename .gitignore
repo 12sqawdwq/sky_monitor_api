@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local editor/agent state
+.codex/
+.agents/
+.idea/
+.vscode/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Generated astronomy data
+data/catalog.db
+data/de421.bsp
+data/raw/
+data/.cache/
+data/.config/
+site/wiki/cities.tsv
+
+# Machine-specific deployment output
+deploy/lingzhuback-nginx.conf
+deploy/resolved-public-dns.conf
+
+# Temporary files
+*.log
+*.tmp
+.DS_Store

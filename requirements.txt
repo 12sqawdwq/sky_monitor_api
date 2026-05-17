@@ -1,0 +1,15 @@
+fastapi>=0.100,<0.116; python_version < "3.9"
+fastapi; python_version >= "3.9"
+uvicorn[standard]>=0.22,<0.31; python_version < "3.9"
+uvicorn[standard]; python_version >= "3.9"
+pydantic>=2.0,<2.11; python_version < "3.9"
+pydantic; python_version >= "3.9"
+skyfield
+numpy<2; python_version < "3.9"
+astropy>=5.2,<5.3; python_version < "3.9"
+astropy; python_version >= "3.9"
+pandas>=1.5,<2.1; python_version < "3.9"
+pandas; python_version >= "3.9"
+requests
+pytest>=7,<9; python_version < "3.9"
+pytest; python_version >= "3.9"

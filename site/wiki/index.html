@@ -1,0 +1,2206 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lingzhu Sky Assistant Wiki</title>
+  <meta name="description" content="Lingzhu Sky Assistant astronomy backend wiki, architecture, deployment notes, and project journal.">
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: rgba(9, 18, 34, 0.78);
+      --panel-strong: rgba(12, 24, 45, 0.92);
+      --line: rgba(154, 182, 255, 0.22);
+      --text: #eff6ff;
+      --muted: #afbdd4;
+      --soft: #d6e4ff;
+      --accent: #89b4ff;
+      --cyan: #77f2ff;
+      --gold: #ffd98a;
+      --rose: #ff93bd;
+      --green: #9af0c5;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 12%, rgba(119, 242, 255, 0.18), transparent 28rem),
+        radial-gradient(circle at 78% 5%, rgba(137, 180, 255, 0.22), transparent 30rem),
+        radial-gradient(circle at 55% 70%, rgba(255, 147, 189, 0.11), transparent 28rem),
+        linear-gradient(180deg, #06101f 0%, #091a2d 48%, #050914 100%);
+      font: 15px/1.72 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    body::before {
+      background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.82) 0 1px, transparent 1.5px),
+        radial-gradient(circle, rgba(137, 180, 255, 0.75) 0 1px, transparent 1.8px),
+        radial-gradient(circle, rgba(119, 242, 255, 0.62) 0 1px, transparent 1.5px);
+      background-size: 122px 122px, 173px 173px, 241px 241px;
+      background-position: 12px 18px, 50px 80px, 105px 40px;
+      opacity: 0.48;
+    }
+
+    body::after {
+      background:
+        linear-gradient(115deg, transparent 0 44%, rgba(137, 180, 255, 0.14) 45%, transparent 47% 100%),
+        radial-gradient(ellipse at 50% 100%, rgba(137, 180, 255, 0.2), transparent 42rem);
+      opacity: 0.62;
+    }
+
+    a {
+      color: var(--cyan);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(18px);
+      background: rgba(5, 11, 22, 0.74);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .nav-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .mark {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 38% 34%, #ffffff 0 9%, transparent 10%),
+        conic-gradient(from 190deg, #77f2ff, #89b4ff, #ff93bd, #ffd98a, #77f2ff);
+      box-shadow: 0 0 28px rgba(119, 242, 255, 0.4);
+    }
+
+    .links {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .links a {
+      color: var(--soft);
+      font-size: 14px;
+    }
+
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 44px 22px 76px;
+    }
+
+    .hero {
+      min-height: 520px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+      gap: 34px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(137, 180, 255, 0.1);
+      color: var(--soft);
+      font-size: 13px;
+    }
+
+    h1 {
+      margin: 18px 0 18px;
+      font-size: clamp(42px, 7vw, 84px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 720px;
+      color: var(--soft);
+      font-size: 19px;
+      line-height: 1.78;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(137, 180, 255, 0.34);
+      background: rgba(137, 180, 255, 0.14);
+      color: var(--text);
+      font-weight: 680;
+      box-shadow: 0 14px 38px rgba(0, 0, 0, 0.22);
+    }
+
+    .button.primary {
+      background: linear-gradient(135deg, rgba(119, 242, 255, 0.94), rgba(137, 180, 255, 0.92));
+      color: #06101f;
+      border-color: transparent;
+    }
+
+    .button:disabled {
+      cursor: not-allowed;
+      opacity: 0.56;
+    }
+
+    .orbit {
+      position: relative;
+      min-height: 420px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 50% 52%, rgba(119, 242, 255, 0.18), transparent 36%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .orbit svg {
+      width: 100%;
+      height: 100%;
+      min-height: 420px;
+      display: block;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin: 16px 0 40px;
+    }
+
+    .stat,
+    .card,
+    .timeline-item,
+    .code-panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .stat {
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 25px;
+      color: var(--text);
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    section {
+      margin-top: 54px;
+      scroll-margin-top: 82px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: clamp(26px, 4vw, 42px);
+      line-height: 1.16;
+      letter-spacing: 0;
+    }
+
+    .section-lead {
+      max-width: 820px;
+      color: var(--muted);
+      margin: 0 0 22px;
+      font-size: 17px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border-radius: 18px;
+      padding: 22px;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      color: var(--text);
+      font-size: 18px;
+    }
+
+    .card p,
+    .card li {
+      color: var(--muted);
+    }
+
+    .card ul {
+      padding-left: 19px;
+      margin: 10px 0 0;
+    }
+
+    .pill {
+      display: inline-flex;
+      margin-bottom: 14px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      color: #06101f;
+      background: var(--gold);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .architecture {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      max-width: 920px;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr));
+      gap: 10px;
+    }
+
+    .flow div {
+      min-height: 102px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(119, 242, 255, 0.08);
+      color: var(--soft);
+      font-weight: 700;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 14px;
+    }
+
+    .timeline-item {
+      border-radius: 16px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .timeline-item time {
+      color: var(--cyan);
+      font-weight: 760;
+    }
+
+    .timeline-item h3 {
+      margin: 0 0 6px;
+    }
+
+    .timeline-item p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .code-panel {
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .code-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 16px;
+      color: var(--soft);
+      background: rgba(255, 255, 255, 0.06);
+      border-bottom: 1px solid var(--line);
+      font-weight: 700;
+    }
+
+    pre {
+      margin: 0;
+      padding: 18px;
+      overflow-x: auto;
+      color: #d9e8ff;
+      background: rgba(2, 8, 18, 0.68);
+      font: 13px/1.65 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    .note {
+      border-left: 3px solid var(--cyan);
+      padding: 14px 16px;
+      background: rgba(119, 242, 255, 0.09);
+      color: var(--soft);
+      border-radius: 8px;
+    }
+
+    .demo-shell {
+      display: grid;
+      grid-template-columns: minmax(300px, 0.82fr) minmax(0, 1.18fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .control-panel,
+    .sky-panel,
+    .reasoning-panel,
+    .json-panel {
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.025)),
+        var(--panel);
+      box-shadow:
+        0 24px 90px rgba(0, 0, 0, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(22px) saturate(135%);
+      border-radius: 18px;
+    }
+
+    .control-panel {
+      position: sticky;
+      top: 92px;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .control-panel::before,
+    .reasoning-panel::before,
+    .json-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(115deg, rgba(255,255,255,.16), transparent 34%),
+        radial-gradient(circle at 18% 12%, rgba(119,242,255,.16), transparent 12rem);
+      opacity: .74;
+    }
+
+    .control-panel label {
+      position: relative;
+      display: block;
+      color: var(--soft);
+      font-weight: 720;
+      margin-bottom: 8px;
+    }
+
+    .control-panel textarea,
+    .control-panel input[type="text"],
+    .control-panel input[type="file"] {
+      position: relative;
+      width: 100%;
+      border: 1px solid rgba(154, 182, 255, 0.26);
+      border-radius: 10px;
+      background: rgba(2, 8, 18, 0.54);
+      color: var(--text);
+      padding: 12px;
+      font: inherit;
+      outline: none;
+      box-shadow: inset 0 1px 18px rgba(119, 242, 255, 0.04);
+      transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+    }
+
+    .control-panel textarea:focus,
+    .control-panel input[type="text"]:focus,
+    .control-panel input[type="file"]:focus {
+      border-color: rgba(119, 242, 255, .72);
+      box-shadow: 0 0 0 3px rgba(119, 242, 255, .1), inset 0 1px 18px rgba(119, 242, 255, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .control-panel textarea {
+      min-height: 118px;
+      resize: vertical;
+    }
+
+    .field-group {
+      margin-bottom: 16px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 16px;
+    }
+
+    .chip {
+      border: 1px solid rgba(119, 242, 255, 0.28);
+      background: rgba(119, 242, 255, 0.09);
+      color: var(--soft);
+      min-height: 34px;
+      padding: 0 10px;
+      border-radius: 999px;
+      font: inherit;
+      cursor: pointer;
+      transition: transform 220ms cubic-bezier(.2,.9,.2,1.25), border-color 220ms ease, background 220ms ease;
+    }
+
+    .chip:hover {
+      transform: translateY(-2px);
+      border-color: rgba(119, 242, 255, 0.7);
+      background: rgba(119, 242, 255, 0.16);
+    }
+
+    .demo-status {
+      margin-top: 12px;
+      min-height: 24px;
+      color: var(--gold);
+      font-size: 14px;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 0 0 16px;
+    }
+
+    .pipe-step {
+      position: relative;
+      min-height: 92px;
+      border: 1px solid rgba(154, 182, 255, 0.22);
+      border-radius: 14px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.015)),
+        rgba(137, 180, 255, 0.08);
+      padding: 14px;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      transition: transform 360ms cubic-bezier(.18,.9,.22,1.28), border-color 300ms ease, background 300ms ease, box-shadow 300ms ease;
+    }
+
+    .pipe-step::before {
+      content: "";
+      position: absolute;
+      inset: -70% -30%;
+      background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.18), transparent 58%);
+      transform: translateX(-60%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .pipe-step::after {
+      content: "";
+      position: absolute;
+      inset: auto 12px 10px 12px;
+      height: 2px;
+      background: rgba(119, 242, 255, 0.18);
+      transform-origin: left center;
+      transform: scaleX(0);
+      transition: transform 420ms ease;
+    }
+
+    .pipe-step.active {
+      border-color: rgba(119, 242, 255, 0.58);
+      box-shadow: 0 0 28px rgba(119, 242, 255, 0.16);
+      transform: translateY(-3px) scale(1.012);
+    }
+
+    .pipe-step.active::before {
+      opacity: 1;
+      animation: glassSweep 1.3s cubic-bezier(.2,.8,.2,1) infinite;
+    }
+
+    .pipe-step.active::after {
+      transform: scaleX(1);
+    }
+
+    .pipe-step.done {
+      border-color: rgba(154, 240, 197, 0.42);
+      background: rgba(154, 240, 197, 0.08);
+    }
+
+    .pipe-kicker {
+      color: var(--cyan);
+      font-size: 12px;
+      font-weight: 760;
+      margin-bottom: 4px;
+    }
+
+    .pipe-title {
+      font-weight: 760;
+      color: var(--text);
+    }
+
+    .pipe-copy {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.48;
+      margin-top: 4px;
+    }
+
+    .demo-stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .sky-panel {
+      position: relative;
+      min-height: 520px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 48%, rgba(119, 242, 255, 0.18), transparent 30%),
+        radial-gradient(circle at 20% 18%, rgba(255, 217, 138, 0.12), transparent 26%),
+        radial-gradient(circle at 82% 72%, rgba(255, 147, 189, 0.11), transparent 24%),
+        rgba(2, 8, 18, 0.58);
+      isolation: isolate;
+    }
+
+    .sky-panel::before {
+      content: "";
+      position: absolute;
+      inset: 22px;
+      border-radius: 50%;
+      border: 1px solid rgba(154, 182, 255, 0.22);
+      box-shadow:
+        inset 0 0 0 74px rgba(137, 180, 255, 0.025),
+        inset 0 0 0 148px rgba(137, 180, 255, 0.02),
+        inset 0 0 80px rgba(119, 242, 255, 0.08);
+      animation: horizonBreath 7.6s ease-in-out infinite;
+    }
+
+    .sky-panel::after {
+      content: "N";
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(214, 228, 255, 0.68);
+      font-weight: 820;
+    }
+
+    .sky-veil,
+    .aurora,
+    .scan-ring,
+    .shooting-star,
+    .dust,
+    .constellation-layer {
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .sky-veil {
+      inset: 0;
+      z-index: 1;
+      background:
+        radial-gradient(ellipse at 20% 24%, rgba(119, 242, 255, 0.16), transparent 28%),
+        radial-gradient(ellipse at 74% 66%, rgba(255, 147, 189, 0.12), transparent 30%),
+        linear-gradient(135deg, rgba(255,255,255,.08), transparent 34%, rgba(255,255,255,.04) 68%, transparent);
+      mix-blend-mode: screen;
+      opacity: .9;
+    }
+
+    .aurora {
+      left: -16%;
+      right: -16%;
+      top: 4%;
+      height: 58%;
+      z-index: 2;
+      background:
+        linear-gradient(105deg, transparent 0 12%, rgba(119,242,255,.12) 24%, rgba(137,180,255,.18) 38%, rgba(255,147,189,.11) 55%, transparent 76%),
+        linear-gradient(76deg, transparent 0 22%, rgba(154,240,197,.1) 48%, transparent 78%);
+      filter: blur(20px);
+      transform: rotate(-7deg) translateX(-8%);
+      animation: auroraDrift 12s cubic-bezier(.45,0,.25,1) infinite alternate;
+    }
+
+    .scan-ring {
+      left: 50%;
+      top: 50%;
+      width: 26%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      z-index: 2;
+      border: 1px solid rgba(119, 242, 255, .34);
+      box-shadow: 0 0 42px rgba(119, 242, 255, .2), inset 0 0 30px rgba(119, 242, 255, .08);
+      transform: translate(-50%, -50%) scale(.2);
+      opacity: 0;
+    }
+
+    .sky-panel.animating .scan-ring {
+      animation: scanBloom 1.9s cubic-bezier(.16,.9,.2,1) 1;
+    }
+
+    .constellation-layer {
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 4;
+      overflow: visible;
+    }
+
+    .chart-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      transform-origin: 50% 50%;
+      transition: transform 720ms cubic-bezier(.16,.9,.2,1);
+      will-change: transform;
+    }
+
+    .constellation-line {
+      stroke: rgba(119, 242, 255, .38);
+      stroke-width: 1.2;
+      stroke-dasharray: 220;
+      stroke-dashoffset: 220;
+      filter: drop-shadow(0 0 7px rgba(119, 242, 255, .46));
+      animation: drawLine 1.6s cubic-bezier(.18,.8,.24,1) forwards;
+      animation-delay: var(--line-delay);
+    }
+
+    .shooting-star {
+      width: 160px;
+      height: 2px;
+      z-index: 8;
+      left: var(--sx);
+      top: var(--sy);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), rgba(119,242,255,.96), transparent);
+      border-radius: 999px;
+      opacity: 0;
+      transform: rotate(var(--angle)) translateX(-80px);
+      filter: drop-shadow(0 0 12px rgba(119, 242, 255, .75));
+      animation: shooting 1.7s cubic-bezier(.16,.78,.24,1) forwards;
+      animation-delay: var(--delay);
+    }
+
+    .dust {
+      width: var(--dust-size);
+      height: var(--dust-size);
+      left: var(--x);
+      top: var(--y);
+      z-index: 3;
+      border-radius: 50%;
+      background: rgba(214, 228, 255, .72);
+      box-shadow: 0 0 12px rgba(119,242,255,.52);
+      opacity: 0;
+      animation: floatDust var(--duration) ease-in-out infinite;
+      animation-delay: var(--delay);
+    }
+
+    .chart-object {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      width: var(--size);
+      height: var(--size);
+      border-radius: 50%;
+      z-index: 6;
+      transform: translate(-50%, -50%) scale(0.18) rotate(-16deg);
+      opacity: 0;
+      background:
+        radial-gradient(circle at 35% 28%, #ffffff 0 18%, var(--object-color, #eff6ff) 42%, rgba(119,242,255,.45) 100%);
+      box-shadow:
+        0 0 12px var(--object-glow, rgba(255,255,255,.7)),
+        0 0 34px var(--object-glow, rgba(255,255,255,.34));
+      animation: starIn 820ms cubic-bezier(.16,1.2,.24,1) forwards, twinkle 3.4s ease-in-out infinite;
+      animation-delay: var(--delay), calc(var(--delay) + 820ms);
+      will-change: transform, opacity, filter;
+    }
+
+    .chart-object::before {
+      content: "";
+      position: absolute;
+      inset: -14px;
+      border-radius: inherit;
+      background: radial-gradient(circle, var(--object-glow, rgba(119,242,255,.34)), transparent 62%);
+      opacity: .42;
+      transform: scale(.7);
+      animation: haloPulse 3.8s ease-in-out infinite;
+      animation-delay: calc(var(--delay) + 800ms);
+    }
+
+    .chart-object.planet {
+      background: radial-gradient(circle at 35% 30%, #fff7d6, #ffd98a 42%, #ff93bd 100%);
+    }
+
+    .chart-object.deep_sky {
+      background: radial-gradient(circle, rgba(119,242,255,.86), rgba(137,180,255,.26) 72%);
+      border: 1px solid rgba(119, 242, 255, .45);
+    }
+
+    .chart-label {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      z-index: 7;
+      transform: translate(12px, calc(-50% + 8px)) scale(.96);
+      color: var(--soft);
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      animation: labelIn 640ms cubic-bezier(.18,.9,.2,1) forwards;
+      animation-delay: calc(var(--delay) + 180ms);
+      text-shadow: 0 2px 10px rgba(0, 0, 0, .7);
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+
+    .chart-object {
+      cursor: pointer;
+    }
+
+    .chart-object.selected {
+      outline: 1px solid rgba(255, 255, 255, .82);
+      outline-offset: 5px;
+      box-shadow:
+        0 0 18px rgba(255, 255, 255, .8),
+        0 0 46px var(--object-glow, rgba(119,242,255,.66));
+    }
+
+    .chart-empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      text-align: center;
+      padding: 28px;
+      z-index: 5;
+    }
+
+    .chart-controls {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      z-index: 12;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      max-width: min(360px, calc(100% - 28px));
+      padding: 8px;
+      border: 1px solid rgba(154, 182, 255, .22);
+      border-radius: 12px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.14), rgba(255,255,255,.04)),
+        rgba(2, 8, 18, .56);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, .24);
+    }
+
+    .chart-controls button {
+      width: 38px;
+      height: 34px;
+      border: 1px solid rgba(154, 182, 255, .24);
+      border-radius: 9px;
+      color: var(--text);
+      background: rgba(255, 255, 255, .08);
+      font-weight: 820;
+      cursor: pointer;
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+    .chart-controls button[data-chart-action^="time"] {
+      width: 58px;
+      font-size: 12px;
+    }
+
+    .chart-controls button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(119, 242, 255, .5);
+      background: rgba(119, 242, 255, .12);
+    }
+
+    .chart-readout {
+      position: absolute;
+      left: 16px;
+      top: 72px;
+      z-index: 12;
+      max-width: min(420px, calc(100% - 32px));
+      padding: 7px 10px;
+      border: 1px solid rgba(154, 182, 255, .18);
+      border-radius: 999px;
+      color: var(--soft);
+      background: rgba(2, 8, 18, .45);
+      backdrop-filter: blur(14px);
+      font-size: 12px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, .2);
+    }
+
+    .object-drawer {
+      position: absolute;
+      right: 14px;
+      top: 14px;
+      z-index: 13;
+      width: min(280px, calc(100% - 28px));
+      padding: 14px;
+      border: 1px solid rgba(119, 242, 255, .24);
+      border-radius: 14px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.15), rgba(255,255,255,.05)),
+        rgba(2, 8, 18, .68);
+      backdrop-filter: blur(24px);
+      box-shadow: 0 20px 64px rgba(0, 0, 0, .3);
+    }
+
+    .object-drawer[hidden] {
+      display: none;
+    }
+
+    .object-drawer h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .object-drawer p {
+      margin: 8px 0 0;
+      color: var(--soft);
+      font-size: 13px;
+      line-height: 1.48;
+    }
+
+    .object-drawer dl {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 10px 0 0;
+    }
+
+    .object-drawer dt {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .object-drawer dd {
+      margin: 2px 0 0;
+      color: var(--text);
+      font-weight: 760;
+    }
+
+    .chart-meta {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 14px;
+      z-index: 9;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .meta-box {
+      border: 1px solid rgba(154, 182, 255, 0.2);
+      border-radius: 10px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.11), rgba(255,255,255,.03)),
+        rgba(2, 8, 18, 0.58);
+      backdrop-filter: blur(16px);
+      padding: 10px;
+      transform: translateY(8px);
+      opacity: .82;
+      animation: softRise 760ms cubic-bezier(.18,.9,.2,1) forwards;
+    }
+
+    .meta-box strong {
+      display: block;
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .meta-box span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .reasoning-panel {
+      position: relative;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .reasoning-panel h3,
+    .json-panel h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .reasoning-panel p {
+      color: var(--soft);
+      margin: 0 0 12px;
+    }
+
+    .reason-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+
+    .reason-card {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid rgba(154, 182, 255, .18);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .05);
+    }
+
+    .reason-card strong {
+      color: var(--text);
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .reason-card span {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .json-panel {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .json-panel h3 {
+      padding: 16px 18px 0;
+    }
+
+    .json-panel pre {
+      max-height: 360px;
+    }
+
+    @keyframes starIn {
+      to {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        opacity: 1;
+      }
+    }
+
+    @keyframes labelIn {
+      to {
+        opacity: .94;
+        transform: translate(12px, -50%) scale(1);
+      }
+    }
+
+    @keyframes twinkle {
+      0%, 100% {
+        filter: brightness(1);
+      }
+      50% {
+        filter: brightness(1.45);
+      }
+    }
+
+    @keyframes haloPulse {
+      0%, 100% {
+        opacity: .18;
+        transform: scale(.72);
+      }
+      50% {
+        opacity: .52;
+        transform: scale(1.18);
+      }
+    }
+
+    @keyframes horizonBreath {
+      0%, 100% {
+        transform: scale(1);
+        opacity: .78;
+      }
+      50% {
+        transform: scale(1.025);
+        opacity: 1;
+      }
+    }
+
+    @keyframes auroraDrift {
+      from {
+        transform: rotate(-7deg) translateX(-8%) translateY(0);
+      }
+      to {
+        transform: rotate(-3deg) translateX(8%) translateY(18px);
+      }
+    }
+
+    @keyframes scanBloom {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(.12);
+      }
+      22% {
+        opacity: .8;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(4.2);
+      }
+    }
+
+    @keyframes drawLine {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    @keyframes shooting {
+      0% {
+        opacity: 0;
+        transform: rotate(var(--angle)) translateX(-110px);
+      }
+      16% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: rotate(var(--angle)) translateX(260px);
+      }
+    }
+
+    @keyframes floatDust {
+      0%, 100% {
+        opacity: .12;
+        transform: translate3d(0, 0, 0) scale(.82);
+      }
+      50% {
+        opacity: .68;
+        transform: translate3d(12px, -18px, 0) scale(1.08);
+      }
+    }
+
+    @keyframes softRise {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes glassSweep {
+      from {
+        transform: translateX(-70%) rotate(8deg);
+      }
+      to {
+        transform: translateX(70%) rotate(8deg);
+      }
+    }
+
+    footer {
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 920px) {
+      .hero,
+      .cards,
+      .stat-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .flow {
+        grid-template-columns: 1fr;
+      }
+
+      .timeline-item {
+        grid-template-columns: 1fr;
+      }
+
+      .demo-shell,
+      .pipeline,
+      .chart-meta {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-readout {
+        top: 108px;
+      }
+
+      .object-drawer {
+        left: 14px;
+        right: 14px;
+        top: 148px;
+        width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" aria-label="Primary navigation">
+    <div class="nav-inner">
+      <a class="brand" href="#top" aria-label="Lingzhu Sky Assistant Wiki">
+        <span class="mark" aria-hidden="true"></span>
+        <span>Lingzhu Sky Wiki</span>
+      </a>
+      <div class="links">
+        <a href="#architecture">架构</a>
+        <a href="#catalog">星表</a>
+        <a href="#live-demo">交互演示</a>
+        <a href="#deployment">部署</a>
+        <a href="#journal">工程日志</a>
+        <a href="/wiki/health">Health</a>
+        <a href="/wiki/api">API 调用</a>
+        <a href="https://sky.eunoia.top/docs">OpenAPI</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="top" class="container">
+    <section class="hero" aria-labelledby="title">
+      <div>
+        <span class="eyebrow">GPS Sky Chart Backend · FastAPI · HYG Catalog · Skyfield</span>
+        <h1 id="title">把当前位置切成一张可调用的星图</h1>
+        <p class="lead">
+          Lingzhu Sky Assistant 是面向灵珠平台和语音助手的天文后端服务。它接收 GPS 经纬度和时间，
+          输出当前地平坐标系下可见的亮星、行星、知名星团、星云与星系，并给出适合前端绘制星图的相对坐标。
+        </p>
+        <div class="actions">
+          <a class="button primary" href="/wiki/api">查看 API 调用方式</a>
+          <a class="button" href="https://sky.eunoia.top/openapi.json">OpenAPI JSON</a>
+          <a class="button" href="https://sky.eunoia.top/health">服务健康检查</a>
+        </div>
+      </div>
+      <div class="orbit" aria-label="Stylized star chart">
+        <svg viewBox="0 0 620 520" role="img" aria-labelledby="orbit-title">
+          <title id="orbit-title">星图投影示意</title>
+          <defs>
+            <radialGradient id="planet" cx="38%" cy="34%" r="62%">
+              <stop offset="0" stop-color="#fff7d6"/>
+              <stop offset="0.42" stop-color="#ffd98a"/>
+              <stop offset="1" stop-color="#ff93bd"/>
+            </radialGradient>
+            <linearGradient id="path" x1="0" x2="1">
+              <stop offset="0" stop-color="#77f2ff"/>
+              <stop offset="1" stop-color="#89b4ff"/>
+            </linearGradient>
+          </defs>
+          <rect width="620" height="520" fill="rgba(2,8,18,0.28)"/>
+          <circle cx="310" cy="260" r="204" fill="none" stroke="rgba(137,180,255,.22)" stroke-width="2"/>
+          <circle cx="310" cy="260" r="150" fill="none" stroke="rgba(137,180,255,.14)" stroke-width="2"/>
+          <circle cx="310" cy="260" r="86" fill="none" stroke="rgba(137,180,255,.12)" stroke-width="2"/>
+          <path d="M119 295 C190 175 265 330 348 208 S496 186 529 112" fill="none" stroke="url(#path)" stroke-width="2.2" opacity=".9"/>
+          <path d="M165 382 C238 284 325 383 422 278" fill="none" stroke="rgba(255,217,138,.6)" stroke-width="1.8"/>
+          <g fill="#eff6ff">
+            <circle cx="119" cy="295" r="4.2"/>
+            <circle cx="214" cy="226" r="3.4"/>
+            <circle cx="300" cy="286" r="5.3"/>
+            <circle cx="348" cy="208" r="3.2"/>
+            <circle cx="453" cy="178" r="4.1"/>
+            <circle cx="529" cy="112" r="5.7"/>
+            <circle cx="165" cy="382" r="3.3"/>
+            <circle cx="248" cy="331" r="4.3"/>
+            <circle cx="339" cy="348" r="3.6"/>
+            <circle cx="422" cy="278" r="4.8"/>
+          </g>
+          <g fill="url(#planet)">
+            <circle cx="390" cy="122" r="18"/>
+          </g>
+          <g fill="#77f2ff" opacity=".72">
+            <circle cx="78" cy="104" r="2.5"/>
+            <circle cx="148" cy="112" r="1.8"/>
+            <circle cx="518" cy="348" r="2.4"/>
+            <circle cx="452" cy="411" r="1.9"/>
+            <circle cx="88" cy="450" r="2.1"/>
+            <circle cx="568" cy="228" r="1.8"/>
+            <circle cx="276" cy="92" r="2"/>
+          </g>
+          <text x="310" y="479" text-anchor="middle" fill="#afbdd4" font-size="14">azimuth / altitude · polar horizon projection</text>
+          <text x="310" y="264" text-anchor="middle" fill="#d6e4ff" font-size="18" font-weight="700">ZENITH</text>
+        </svg>
+      </div>
+    </section>
+
+    <div class="stat-grid" aria-label="Project facts">
+      <div class="stat"><strong>HTTPS</strong><span>sky.eunoia.top 已接入域名证书</span></div>
+      <div class="stat"><strong>SQLite</strong><span>本地 HYG 恒星星表</span></div>
+      <div class="stat"><strong>Skyfield</strong><span>太阳系行星星历计算</span></div>
+      <div class="stat"><strong>OpenAPI</strong><span>灵珠平台可导入调用</span></div>
+    </div>
+
+    <section id="architecture">
+      <h2>系统架构</h2>
+      <p class="section-lead">
+        后端把稳定星表数据、实时天文计算、平台可调用 API 分层处理。LLM 不负责天文计算，只消费结构化结果并生成自然语言。
+      </p>
+      <div class="architecture">
+        <div class="flow" aria-label="Architecture flow">
+          <div>GPS 坐标<br>latitude / longitude</div>
+          <div>天文计算层<br>Alt / Az</div>
+          <div>星表筛选<br>Mag / Altitude</div>
+          <div>星图投影<br>chart_x / chart_y</div>
+          <div>灵珠工具<br>GET /sky/chart</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="catalog">
+      <h2>星表与筛选逻辑</h2>
+      <p class="section-lead">
+        当前版本以真实观测体验为目标，默认只返回高度角足够、亮度可见、识别度高的天体，避免把星表原始数据直接倾倒给模型。
+      </p>
+      <div class="cards">
+        <article class="card">
+          <span class="pill">Stars</span>
+          <h3>恒星</h3>
+          <p>来源于 HYG Database，保留常见名称、赤经赤纬、视星等、距离、光谱型和星座信息。默认筛选视星等小于等于 3 等、高度角大于等于 15 度。</p>
+        </article>
+        <article class="card">
+          <span class="pill">Planets</span>
+          <h3>太阳系行星</h3>
+          <p>通过 Skyfield 和 DE421 星历计算，行星优先级被放宽，只要在地平线上方就可进入候选结果，适合回答“能否看到金星/火星/土星”。</p>
+        </article>
+        <article class="card">
+          <span class="pill">Deep Sky</span>
+          <h3>深空天体</h3>
+          <p>内置知名星团、星云、星系清单。深空天体默认亮度阈值放宽到 9 等，重点覆盖 M31、M42、M45 等高识别目标。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="live-demo">
+      <h2>可视化调用流程</h2>
+      <p class="section-lead">
+        这里把完整链路做成了一个可交互演示：输入当前位置或上传坐标文本，前端解析成 GPS，经由后端返回星图 JSON，
+        再把结构化数据转换成动态星图和推理反馈。推理反馈由前端根据 JSON 生成，用来模拟大语言模型拿到工具结果后的总结过程。
+      </p>
+
+      <div class="demo-shell">
+        <aside class="control-panel">
+          <div class="field-group">
+            <label for="locationInput">位置输入</label>
+            <textarea id="locationInput" placeholder="可输入：苏州太仓 / 巴黎 / Tokyo / New York / 31.4591, 121.1298 / latitude:31.4591 longitude:121.1298">苏州太仓</textarea>
+          </div>
+          <div class="chips" aria-label="示例位置">
+            <button class="chip" type="button" data-location="苏州太仓">苏州太仓</button>
+            <button class="chip" type="button" data-location="上海">上海</button>
+            <button class="chip" type="button" data-location="北京">北京</button>
+            <button class="chip" type="button" data-location="31.4591, 121.1298">坐标样例</button>
+          </div>
+          <div class="field-group">
+            <label for="coordinateFile">上传坐标文件</label>
+            <input id="coordinateFile" type="file" accept=".txt,.json,.csv">
+          </div>
+          <div class="actions">
+            <button class="button primary" id="runDemo" type="button">解析并生成星图</button>
+            <button class="button" id="useBrowserLocation" type="button">读取浏览器定位</button>
+          </div>
+          <div class="demo-status" id="demoStatus">等待输入位置。</div>
+        </aside>
+
+        <div class="demo-stage">
+          <div class="pipeline" aria-label="调用链路状态">
+            <div class="pipe-step" data-step="parse">
+              <div class="pipe-kicker">01</div>
+              <div class="pipe-title">前端解析</div>
+              <div class="pipe-copy">从文本、文件或浏览器定位提取 GPS。</div>
+            </div>
+            <div class="pipe-step" data-step="request">
+              <div class="pipe-kicker">02</div>
+              <div class="pipe-title">请求后端</div>
+              <div class="pipe-copy">调用 GET /sky/chart 获取 JSON。</div>
+            </div>
+            <div class="pipe-step" data-step="render">
+              <div class="pipe-kicker">03</div>
+              <div class="pipe-title">绘制星图</div>
+              <div class="pipe-copy">用 chart_x / chart_y 渲染天体位置。</div>
+            </div>
+            <div class="pipe-step" data-step="reason">
+              <div class="pipe-kicker">04</div>
+              <div class="pipe-title">推理反馈</div>
+              <div class="pipe-copy">根据亮度、高度角和类别生成建议。</div>
+            </div>
+          </div>
+
+          <div class="sky-panel" id="skyPanel" aria-label="动态星图">
+            <div class="chart-empty" id="chartEmpty">点击“解析并生成星图”后，这里会出现当前位置的星图。</div>
+            <div class="chart-controls" id="chartControls" aria-label="星图控制">
+              <button type="button" data-chart-action="zoom-out" title="缩小" aria-label="缩小">−</button>
+              <button type="button" data-chart-action="zoom-in" title="放大" aria-label="放大">+</button>
+              <button type="button" data-chart-action="rotate-left" title="逆时针旋转" aria-label="逆时针旋转">↺</button>
+              <button type="button" data-chart-action="rotate-right" title="顺时针旋转" aria-label="顺时针旋转">↻</button>
+              <button type="button" data-chart-action="time-back" title="后退30分钟" aria-label="后退30分钟">−30m</button>
+              <button type="button" data-chart-action="time-forward" title="前进30分钟" aria-label="前进30分钟">+30m</button>
+              <button type="button" data-chart-action="reset-view" title="重置视角" aria-label="重置视角">0</button>
+            </div>
+            <div class="chart-readout" id="chartReadout">缩放 100% · 视角 0° · 等待星图</div>
+            <div class="object-drawer" id="objectDrawer" hidden></div>
+            <div class="chart-meta" id="chartMeta">
+              <div class="meta-box"><strong>-</strong><span>恒星</span></div>
+              <div class="meta-box"><strong>-</strong><span>行星</span></div>
+              <div class="meta-box"><strong>-</strong><span>深空</span></div>
+              <div class="meta-box"><strong>-</strong><span>总数</span></div>
+            </div>
+          </div>
+
+          <div class="reasoning-panel" id="reasoningPanel">
+            <h3>LLM 推理反馈</h3>
+            <p>工具结果尚未生成。运行演示后，这里会给出适合用户阅读的观星建议。</p>
+          </div>
+
+          <div class="json-panel">
+            <h3>后端 JSON 摘要</h3>
+            <pre><code id="jsonPreview">等待 /sky/chart 返回数据。</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="api">
+      <h2>核心 API</h2>
+      <p class="section-lead">
+        灵珠平台当前已验证通过的调用方式是 GET Query 参数。OpenAPI schema 的 server 已固定为域名，避免平台把服务地址识别为 IP。
+      </p>
+      <div class="code-panel">
+        <div class="code-title">GET /sky/chart</div>
+        <pre><code>curl "https://sky.eunoia.top/sky/chart?latitude=31.2304&amp;longitude=121.4737"</code></pre>
+      </div>
+      <p class="note">
+        只传 <strong>latitude</strong> 和 <strong>longitude</strong> 即可。后端会默认使用高度角 15 度、恒星 3 等、深空天体 9 等和智能数量控制。
+      </p>
+    </section>
+
+    <section id="deployment">
+      <h2>部署状态</h2>
+      <div class="cards">
+        <article class="card">
+          <h3>公网入口</h3>
+          <ul>
+            <li><code>sky.eunoia.top</code> 服务 API</li>
+            <li><code>sky.eunoia.top/wiki</code> 项目 Wiki</li>
+            <li><code>sky.eunoia.top/wiki/health</code> 可视化健康页</li>
+            <li><code>sky.eunoia.top/wiki/api</code> API 调用说明</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>服务进程</h3>
+          <ul>
+            <li>Nginx 对外监听 80 / 443</li>
+            <li>FastAPI 监听 127.0.0.1:8000</li>
+            <li>systemd 托管 lingzhuback</li>
+          </ul>
+        </article>
+        <article class="card">
+          <h3>证书</h3>
+          <ul>
+            <li><code>sky.eunoia.top</code> 已签发 Let’s Encrypt 证书</li>
+            <li><code>/wiki</code> 与 <code>/wiki/api</code> 已整合到主域名</li>
+            <li>续期 hook 会 reload Nginx</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="journal">
+      <h2>工程日志</h2>
+      <div class="timeline">
+        <article class="timeline-item">
+          <time>V0</time>
+          <div>
+            <h3>星表后端搭建</h3>
+            <p>完成 FastAPI 服务、SQLite 星表、HYG 导入、基础健康检查和亮星查询。</p>
+          </div>
+        </article>
+        <article class="timeline-item">
+          <time>V0.2</time>
+          <div>
+            <h3>天文计算接入</h3>
+            <p>引入 Skyfield / Astropy，支持按 GPS 坐标和时间计算地平坐标，输出可见星体。</p>
+          </div>
+        </article>
+        <article class="timeline-item">
+          <time>V0.3</time>
+          <div>
+            <h3>星图 API 优化</h3>
+            <p>扩展深空天体和行星逻辑，增加 chart_x、chart_y、chart_radius，适合前端绘制极坐标星图。</p>
+          </div>
+        </article>
+        <article class="timeline-item">
+          <time>V0.3.1</time>
+          <div>
+            <h3>灵珠平台适配</h3>
+            <p>固定 OpenAPI servers 为 <code>https://sky.eunoia.top</code>，GET 参数兼容 latitude / longitude。</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      <span>Lingzhu Sky Assistant Wiki</span>
+      <span>API: <a href="https://sky.eunoia.top/sky/chart?latitude=31.2304&amp;longitude=121.4737">sky.eunoia.top/sky/chart</a></span>
+    </footer>
+  </main>
+  <script>
+    const knownLocations = {
+      "苏州太仓": { lat: 31.4591, lon: 121.1298, label: "苏州太仓" },
+      "苏州太仓市": { lat: 31.4591, lon: 121.1298, label: "苏州太仓" },
+      "太仓": { lat: 31.4591, lon: 121.1298, label: "苏州太仓" },
+      "苏州": { lat: 31.2989, lon: 120.5853, label: "苏州" },
+      "上海": { lat: 31.2304, lon: 121.4737, label: "上海" },
+      "北京": { lat: 39.9042, lon: 116.4074, label: "北京" },
+      "南京": { lat: 32.0603, lon: 118.7969, label: "南京" },
+      "杭州": { lat: 30.2741, lon: 120.1551, label: "杭州" },
+      "成都": { lat: 30.5728, lon: 104.0668, label: "成都" },
+      "重庆": { lat: 29.563, lon: 106.5516, label: "重庆" },
+      "深圳": { lat: 22.5431, lon: 114.0579, label: "深圳" },
+      "广州": { lat: 23.1291, lon: 113.2644, label: "广州" },
+      "香港": { lat: 22.3193, lon: 114.1694, label: "香港" },
+      "台北": { lat: 25.033, lon: 121.5654, label: "台北" },
+      "东京": { lat: 35.6895, lon: 139.6917, label: "东京" },
+      "首尔": { lat: 37.5665, lon: 126.978, label: "首尔" },
+      "新加坡": { lat: 1.3521, lon: 103.8198, label: "新加坡" },
+      "巴黎": { lat: 48.8566, lon: 2.3522, label: "巴黎" },
+      "伦敦": { lat: 51.5072, lon: -0.1276, label: "伦敦" },
+      "纽约": { lat: 40.7128, lon: -74.006, label: "纽约" },
+      "洛杉矶": { lat: 34.0522, lon: -118.2437, label: "洛杉矶" }
+    };
+
+    let cityIndexPromise = null;
+    let cityAliasMap = null;
+
+    const locationInput = document.getElementById("locationInput");
+    const coordinateFile = document.getElementById("coordinateFile");
+    const runDemo = document.getElementById("runDemo");
+    const useBrowserLocation = document.getElementById("useBrowserLocation");
+    const demoStatus = document.getElementById("demoStatus");
+    const skyPanel = document.getElementById("skyPanel");
+    const chartEmpty = document.getElementById("chartEmpty");
+    const chartMeta = document.getElementById("chartMeta");
+    const chartControls = document.getElementById("chartControls");
+    const chartReadout = document.getElementById("chartReadout");
+    const objectDrawer = document.getElementById("objectDrawer");
+    const reasoningPanel = document.getElementById("reasoningPanel");
+    const jsonPreview = document.getElementById("jsonPreview");
+    const pipeSteps = Array.from(document.querySelectorAll(".pipe-step"));
+    const chartState = {
+      coords: null,
+      payload: null,
+      chart: null,
+      layer: null,
+      zoom: 1,
+      rotation: 0,
+      panX: 0,
+      panY: 0,
+      baseTimeMs: null,
+      timeOffsetMinutes: 0,
+      dragging: false,
+      dragStartX: 0,
+      dragStartY: 0,
+      dragPanX: 0,
+      dragPanY: 0
+    };
+
+    function setStatus(message, tone = "normal") {
+      demoStatus.textContent = message;
+      demoStatus.style.color = tone === "error" ? "var(--rose)" : tone === "ok" ? "var(--green)" : "var(--gold)";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      })[char]);
+    }
+
+    function formatObservedTime(value) {
+      if (!value) return "等待星图";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleString("zh-CN", {
+        hour12: false,
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function requestedTimeUtc() {
+      const base = chartState.baseTimeMs || Date.now();
+      return new Date(base + chartState.timeOffsetMinutes * 60000).toISOString();
+    }
+
+    function resetChartView() {
+      chartState.zoom = 1;
+      chartState.rotation = 0;
+      chartState.panX = 0;
+      chartState.panY = 0;
+      objectDrawer.hidden = true;
+      applyChartTransform();
+    }
+
+    function applyChartTransform() {
+      if (chartState.layer) {
+        chartState.layer.style.transform = `translate(${chartState.panX}px, ${chartState.panY}px) scale(${chartState.zoom}) rotate(${chartState.rotation}deg)`;
+      }
+      const normalizedRotation = ((chartState.rotation % 360) + 360) % 360;
+      chartReadout.textContent = `缩放 ${Math.round(chartState.zoom * 100)}% · 视角 ${normalizedRotation}° · ${formatObservedTime(chartState.chart && chartState.chart.time_utc)}`;
+    }
+
+    function normalizeCityName(value) {
+      return String(value || "")
+        .normalize("NFKC")
+        .toLowerCase()
+        .replace(/[，,。.;；:：'"`´’‘“”()（）\[\]{}<>《》·•\/\\|_-]+/g, "")
+        .replace(/\s+/g, "")
+        .replace(/(市|县|区|省|特别行政区|自治州|地区|city|prefecture|province)$/i, "");
+    }
+
+    function hasCjk(value) {
+      return /[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]/.test(value);
+    }
+
+    function registerCity(aliasMap, key, city) {
+      const normalized = normalizeCityName(key);
+      if (!normalized || normalized.length < 2) return;
+      const current = aliasMap.get(normalized);
+      if (!current || city.population > current.population) {
+        aliasMap.set(normalized, city);
+      }
+    }
+
+    async function loadCityIndex() {
+      if (cityAliasMap) return cityAliasMap;
+      if (!cityIndexPromise) {
+        cityIndexPromise = fetch("/wiki/cities.tsv", { headers: { "Accept": "text/tab-separated-values,text/plain,*/*" } })
+          .then((response) => {
+            if (!response.ok) throw new Error(`城市库加载失败：${response.status}`);
+            return response.text();
+          })
+          .then((text) => {
+            const aliasMap = new Map();
+            const lines = text.split("\n");
+            for (let index = 1; index < lines.length; index += 1) {
+              const line = lines[index];
+              if (!line) continue;
+              const parts = line.split("\t");
+              if (parts.length < 7) continue;
+              const [name, ascii, aliases, latText, lonText, country, populationText] = parts;
+              const lat = Number(latText);
+              const lon = Number(lonText);
+              if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+              const city = {
+                lat,
+                lon,
+                label: name || ascii,
+                country,
+                population: Number(populationText) || 0
+              };
+              registerCity(aliasMap, name, city);
+              registerCity(aliasMap, ascii, city);
+              let aliasCount = 0;
+              for (const alias of aliases.split("|")) {
+                if (!alias) continue;
+                if (hasCjk(alias) || alias.length <= 24 || aliasCount < 8) {
+                  registerCity(aliasMap, alias, city);
+                  aliasCount += 1;
+                }
+              }
+            }
+            cityAliasMap = aliasMap;
+            return aliasMap;
+          });
+      }
+      return cityIndexPromise;
+    }
+
+    async function findCityCoordinate(text) {
+      setStatus("正在加载全球城市坐标库，首次加载可能需要几秒...");
+      const aliasMap = await loadCityIndex();
+      const normalizedText = normalizeCityName(text);
+      if (!normalizedText) return null;
+
+      const exact = aliasMap.get(normalizedText);
+      if (exact) {
+        return { lat: exact.lat, lon: exact.lon, label: `${exact.label}${exact.country ? ` · ${exact.country}` : ""}` };
+      }
+
+      let best = null;
+      for (const [alias, city] of aliasMap.entries()) {
+        if (alias.length < 2) continue;
+        if (normalizedText.includes(alias) || alias.includes(normalizedText)) {
+          if (!best || city.population > best.population || alias.length > best.aliasLength) {
+            best = { ...city, aliasLength: alias.length };
+          }
+        }
+      }
+      if (!best) return null;
+      return { lat: best.lat, lon: best.lon, label: `${best.label}${best.country ? ` · ${best.country}` : ""}` };
+    }
+
+    function resetPipeline() {
+      pipeSteps.forEach((step) => {
+        step.classList.remove("active", "done");
+      });
+    }
+
+    function markStep(stepName, state) {
+      const step = pipeSteps.find((item) => item.dataset.step === stepName);
+      if (!step) return;
+      step.classList.toggle("active", state === "active");
+      step.classList.toggle("done", state === "done");
+    }
+
+    function wait(ms) {
+      return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    async function parseCoordinates(rawText) {
+      const text = String(rawText || "").trim();
+      if (!text) {
+        throw new Error("请先输入地点或坐标。");
+      }
+
+      for (const [name, value] of Object.entries(knownLocations)) {
+        if (text.includes(name)) {
+          return value;
+        }
+      }
+
+      try {
+        const parsed = JSON.parse(text);
+        const lat = parsed.latitude ?? parsed.lat;
+        const lon = parsed.longitude ?? parsed.lon ?? parsed.lng;
+        if (Number.isFinite(Number(lat)) && Number.isFinite(Number(lon))) {
+          return { lat: Number(lat), lon: Number(lon), label: "上传坐标" };
+        }
+      } catch (error) {
+        // Plain text input is expected most of the time.
+      }
+
+      const namedLat = text.match(/(?:latitude|lat|纬度)\s*[:=：]?\s*(-?\d+(?:\.\d+)?)/i);
+      const namedLon = text.match(/(?:longitude|lon|lng|经度)\s*[:=：]?\s*(-?\d+(?:\.\d+)?)/i);
+      if (namedLat && namedLon) {
+        return { lat: Number(namedLat[1]), lon: Number(namedLon[1]), label: "文本坐标" };
+      }
+
+      const numbers = text.match(/-?\d+(?:\.\d+)?/g) || [];
+      if (numbers.length >= 2) {
+        return { lat: Number(numbers[0]), lon: Number(numbers[1]), label: "文本坐标" };
+      }
+
+      const cityMatch = await findCityCoordinate(text);
+      if (cityMatch) {
+        return cityMatch;
+      }
+
+      throw new Error("无法解析位置。可输入“苏州太仓”“巴黎”“Tokyo”或“31.4591, 121.1298”。");
+    }
+
+    function validateCoordinates(coords) {
+      if (!Number.isFinite(coords.lat) || !Number.isFinite(coords.lon)) {
+        throw new Error("坐标不是有效数字。");
+      }
+      if (coords.lat < -90 || coords.lat > 90) {
+        throw new Error("纬度必须在 -90 到 90 之间。");
+      }
+      if (coords.lon < -180 || coords.lon > 180) {
+        throw new Error("经度必须在 -180 到 180 之间。");
+      }
+      return coords;
+    }
+
+    async function fetchSkyChart(coords, observedAt) {
+      const params = new URLSearchParams({
+        latitude: coords.lat.toFixed(6),
+        longitude: coords.lon.toFixed(6),
+        total_limit: "28"
+      });
+      if (observedAt) {
+        params.set("time_utc", observedAt);
+      }
+      const response = await fetch(`/sky/chart?${params.toString()}`, {
+        headers: { "Accept": "application/json" }
+      });
+      if (!response.ok) {
+        throw new Error(`后端返回 ${response.status}`);
+      }
+      return response.json();
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function objectSize(item) {
+      if (item.category === "planet") return 14;
+      if (item.category === "deep_sky") return 18;
+      const mag = Number(item.magnitude);
+      if (!Number.isFinite(mag)) return 9;
+      return clamp(14 - mag * 2.2, 5, 15);
+    }
+
+    function renderMeta(chart) {
+      const counts = chart.counts || {};
+      const total = Object.values(counts).reduce((sum, value) => sum + Number(value || 0), 0);
+      chartMeta.innerHTML = `
+        <div class="meta-box"><strong>${counts.star || 0}</strong><span>恒星</span></div>
+        <div class="meta-box"><strong>${counts.planet || 0}</strong><span>行星</span></div>
+        <div class="meta-box"><strong>${counts.deep_sky || 0}</strong><span>深空</span></div>
+        <div class="meta-box"><strong>${total}</strong><span>总数</span></div>
+      `;
+    }
+
+    function clearSkyEffects() {
+      skyPanel.querySelectorAll(
+        ".chart-layer, .sky-veil, .aurora, .scan-ring, .shooting-star, .dust"
+      ).forEach((node) => node.remove());
+      skyPanel.classList.remove("animating");
+      chartState.layer = null;
+      objectDrawer.hidden = true;
+    }
+
+    function createSkyAtmosphere() {
+      const veil = document.createElement("span");
+      veil.className = "sky-veil";
+      skyPanel.appendChild(veil);
+
+      const aurora = document.createElement("span");
+      aurora.className = "aurora";
+      skyPanel.appendChild(aurora);
+
+      const scanRing = document.createElement("span");
+      scanRing.className = "scan-ring";
+      skyPanel.appendChild(scanRing);
+
+      for (let index = 0; index < 26; index += 1) {
+        const dust = document.createElement("span");
+        dust.className = "dust";
+        dust.style.setProperty("--x", `${8 + Math.random() * 84}%`);
+        dust.style.setProperty("--y", `${8 + Math.random() * 76}%`);
+        dust.style.setProperty("--dust-size", `${1 + Math.random() * 2.8}px`);
+        dust.style.setProperty("--delay", `${Math.random() * 2400}ms`);
+        dust.style.setProperty("--duration", `${4200 + Math.random() * 4200}ms`);
+        skyPanel.appendChild(dust);
+      }
+
+      for (let index = 0; index < 3; index += 1) {
+        const meteor = document.createElement("span");
+        meteor.className = "shooting-star";
+        meteor.style.setProperty("--sx", `${12 + Math.random() * 56}%`);
+        meteor.style.setProperty("--sy", `${12 + Math.random() * 38}%`);
+        meteor.style.setProperty("--angle", `${-24 + Math.random() * 18}deg`);
+        meteor.style.setProperty("--delay", `${600 + index * 760}ms`);
+        skyPanel.appendChild(meteor);
+      }
+
+      window.requestAnimationFrame(() => {
+        skyPanel.classList.add("animating");
+      });
+      window.setTimeout(() => {
+        skyPanel.classList.remove("animating");
+      }, 2200);
+    }
+
+    function createConstellation(points, targetLayer) {
+      const visiblePoints = points.slice(0, 9);
+      if (visiblePoints.length < 2) return;
+
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("class", "constellation-layer");
+      svg.setAttribute("viewBox", "0 0 100 100");
+      svg.setAttribute("preserveAspectRatio", "none");
+
+      visiblePoints.slice(0, -1).forEach((point, index) => {
+        const next = visiblePoints[index + 1];
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("class", "constellation-line");
+        line.setAttribute("x1", point.x.toFixed(2));
+        line.setAttribute("y1", point.y.toFixed(2));
+        line.setAttribute("x2", next.x.toFixed(2));
+        line.setAttribute("y2", next.y.toFixed(2));
+        line.style.setProperty("--line-delay", `${360 + index * 120}ms`);
+        svg.appendChild(line);
+      });
+
+      targetLayer.appendChild(svg);
+    }
+
+    function showObjectDetails(item, insight, dot) {
+      skyPanel.querySelectorAll(".chart-object.selected").forEach((node) => node.classList.remove("selected"));
+      if (dot) dot.classList.add("selected");
+      const name = item.display_name || item.name_zh || item.name_en || item.id || "天体";
+      const categoryLabel = item.category === "planet" ? "行星" : item.category === "deep_sky" ? "深空" : "亮星";
+      const fact = insight && insight.fact ? insight.fact : "";
+      const tip = insight && insight.viewing_tip ? insight.viewing_tip : "";
+      objectDrawer.innerHTML = `
+        <h3>${escapeHtml(name)}</h3>
+        <dl>
+          <div><dt>类别</dt><dd>${escapeHtml(categoryLabel)}</dd></div>
+          <div><dt>高度角</dt><dd>${escapeHtml(item.altitude_deg ?? "-")}°</dd></div>
+          <div><dt>方位</dt><dd>${escapeHtml(compass(item.azimuth_deg))}</dd></div>
+          <div><dt>亮度</dt><dd>${escapeHtml(item.magnitude ?? "-")}</dd></div>
+        </dl>
+        ${fact ? `<p>${escapeHtml(fact)}</p>` : ""}
+        ${tip ? `<p>${escapeHtml(tip)}</p>` : ""}
+      `;
+      objectDrawer.hidden = false;
+    }
+
+    function renderSky(chart) {
+      clearSkyEffects();
+      chartEmpty.style.display = "none";
+      chartState.chart = chart;
+      renderMeta(chart);
+      createSkyAtmosphere();
+
+      const layer = document.createElement("div");
+      layer.className = "chart-layer";
+      skyPanel.appendChild(layer);
+      chartState.layer = layer;
+
+      const objects = (chart.objects || []).slice(0, 28);
+      const insights = chart.reasoning_context && Array.isArray(chart.reasoning_context.object_insights)
+        ? chart.reasoning_context.object_insights
+        : [];
+      const points = [];
+      objects.forEach((item, index) => {
+        const x = clamp(50 + Number(item.chart_x || 0) * 42, 7, 93);
+        const y = clamp(50 - Number(item.chart_y || 0) * 42, 7, 93);
+        const size = objectSize(item);
+        const delay = `${index * 70}ms`;
+        const color = item.category === "planet" ? "#ffd98a" : item.category === "deep_sky" ? "#77f2ff" : "#eff6ff";
+        points.push({ x, y });
+
+        const dot = document.createElement("span");
+        dot.className = `chart-object ${item.category || "star"}`;
+        dot.style.setProperty("--x", `${x}%`);
+        dot.style.setProperty("--y", `${y}%`);
+        dot.style.setProperty("--size", `${size}px`);
+        dot.style.setProperty("--delay", delay);
+        dot.style.setProperty("--object-color", color);
+        dot.style.setProperty("--object-glow", item.category === "planet" ? "rgba(255,217,138,.82)" : "rgba(119,242,255,.66)");
+        dot.title = `${item.display_name || item.name_en || "天体"} · 高度角 ${item.altitude_deg}° · 方位角 ${item.azimuth_deg}°`;
+        dot.tabIndex = 0;
+        dot.setAttribute("role", "button");
+        dot.setAttribute("aria-label", dot.title);
+        dot.addEventListener("click", () => showObjectDetails(item, insights[index], dot));
+        dot.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            showObjectDetails(item, insights[index], dot);
+          }
+        });
+        layer.appendChild(dot);
+
+        if (index < 12) {
+          const label = document.createElement("span");
+          label.className = "chart-label";
+          label.textContent = item.display_name || item.name_zh || item.name_en || item.id || "天体";
+          label.style.setProperty("--x", `${x}%`);
+          label.style.setProperty("--y", `${y}%`);
+          label.style.setProperty("--delay", delay);
+          layer.appendChild(label);
+        }
+      });
+      createConstellation(points, layer);
+      applyChartTransform();
+    }
+
+    function compass(azimuth) {
+      const directions = ["北", "东北", "东", "东南", "南", "西南", "西", "西北"];
+      const index = Math.round(((Number(azimuth) % 360) / 45)) % directions.length;
+      return directions[index];
+    }
+
+    function buildReasoning(chart, coords) {
+      const objects = chart.objects || [];
+      const stars = objects.filter((item) => item.category === "star");
+      const planets = objects.filter((item) => item.category === "planet");
+      const deepSky = objects.filter((item) => item.category === "deep_sky");
+      const highObjects = objects.filter((item) => Number(item.altitude_deg) >= 55);
+      const first = objects[0];
+      const planetNames = planets.slice(0, 4).map((item) => item.display_name || item.name_en).filter(Boolean);
+      const topNames = objects.slice(0, 5).map((item) => item.display_name || item.name_zh || item.name_en).filter(Boolean);
+      const reasoning = chart.reasoning_context || {};
+
+      const fallbackSummary = first
+        ? `当前位置解析为 ${coords.label || "自定义坐标"}（${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}）。后端返回 ${objects.length} 个适合展示的天体，其中 ${stars.length} 颗亮星、${planets.length} 颗行星、${deepSky.length} 个深空目标。最值得优先提示的是 ${first.display_name || first.name_en}，高度角约 ${first.altitude_deg}°，位于${compass(first.azimuth_deg)}方。`
+        : "后端没有返回满足条件的天体，可能是筛选条件过严或当前位置/时间不适合观测。";
+
+      const fallbackBullets = [
+        highObjects.length ? `有 ${highObjects.length} 个目标高度角超过 55°，更接近天顶，受地平遮挡影响较小。` : "高高度角目标较少，实际观测时要避开建筑和树木遮挡。",
+        planetNames.length ? `当前可优先回答行星相关问题：${planetNames.join("、")}。` : "当前结果中没有突出行星，回答时应把亮星和深空目标放在前面。",
+        topNames.length ? `推荐向用户展示的前排目标：${topNames.join("、")}。` : "暂无足够目标可生成推荐列表。",
+        "如果接入真正的大语言模型，可把 sky_chart JSON 作为工具结果，让模型按用户意图生成更口语化的观星建议。"
+      ];
+      const summary = reasoning.summary || fallbackSummary;
+      const bullets = Array.isArray(reasoning.bullets) && reasoning.bullets.length ? reasoning.bullets : fallbackBullets;
+      const insights = Array.isArray(reasoning.object_insights) ? reasoning.object_insights.slice(0, 3) : [];
+
+      reasoningPanel.innerHTML = `
+        <h3>LLM 推理反馈</h3>
+        <p>${escapeHtml(summary)}</p>
+        <ul class="reason-list">
+          ${bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+        </ul>
+        ${insights.map((item) => `
+          <div class="reason-card">
+            <strong>${escapeHtml(item.name || "推荐目标")}</strong>
+            <span>${escapeHtml(item.fact || item.viewing_tip || "可作为当前星图的辅助解释素材。")}</span>
+          </div>
+        `).join("")}
+      `;
+    }
+
+    function renderJsonPreview(payload) {
+      const chart = payload.sky_chart || {};
+      const preview = {
+        observer: chart.observer,
+        time_utc: chart.time_utc,
+        counts: chart.counts,
+        reasoning_context: chart.reasoning_context ? {
+          corpus_version: chart.reasoning_context.corpus_version,
+          summary: chart.reasoning_context.summary,
+          bullets: (chart.reasoning_context.bullets || []).slice(0, 3)
+        } : undefined,
+        first_objects: (chart.objects || []).slice(0, 5).map((item) => ({
+          display_name: item.display_name,
+          category: item.category,
+          altitude_deg: item.altitude_deg,
+          azimuth_deg: item.azimuth_deg,
+          magnitude: item.magnitude,
+          chart_x: item.chart_x,
+          chart_y: item.chart_y
+        }))
+      };
+      jsonPreview.textContent = JSON.stringify(preview, null, 2);
+    }
+
+    async function runInteractiveDemo() {
+      resetPipeline();
+      runDemo.disabled = true;
+      try {
+        chartState.baseTimeMs = Date.now();
+        chartState.timeOffsetMinutes = 0;
+        chartState.chart = null;
+        resetChartView();
+        markStep("parse", "active");
+        setStatus("正在解析输入位置...");
+        await wait(260);
+        const coords = validateCoordinates(await parseCoordinates(locationInput.value));
+        chartState.coords = coords;
+        markStep("parse", "done");
+
+        markStep("request", "active");
+        setStatus(`已解析为 ${coords.label || "自定义坐标"}：${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}。正在请求后端...`);
+        const payload = await fetchSkyChart(coords, requestedTimeUtc());
+        chartState.payload = payload;
+        const chart = payload.sky_chart;
+        markStep("request", "done");
+
+        markStep("render", "active");
+        setStatus("后端 JSON 已返回，正在绘制星图...");
+        await wait(260);
+        renderSky(chart);
+        renderJsonPreview(payload);
+        markStep("render", "done");
+
+        markStep("reason", "active");
+        setStatus("正在根据结构化星图生成推理反馈...");
+        await wait(320);
+        buildReasoning(chart, coords);
+        markStep("reason", "done");
+        setStatus("演示完成：前端解析、后端星图 JSON、可视化渲染和推理反馈已生成。", "ok");
+      } catch (error) {
+        resetPipeline();
+        setStatus(error.message || "演示失败。", "error");
+      } finally {
+        runDemo.disabled = false;
+      }
+    }
+
+    async function refreshChartFromState(reason) {
+      if (!chartState.coords) {
+        setStatus("请先生成一次星图，再使用时间控制。", "error");
+        return;
+      }
+      runDemo.disabled = true;
+      try {
+        setStatus(reason || "正在刷新星图...");
+        const payload = await fetchSkyChart(chartState.coords, requestedTimeUtc());
+        chartState.payload = payload;
+        const chart = payload.sky_chart;
+        renderSky(chart);
+        renderJsonPreview(payload);
+        buildReasoning(chart, chartState.coords);
+        setStatus("星图已按新的时间重新计算。", "ok");
+      } catch (error) {
+        setStatus(error.message || "刷新星图失败。", "error");
+      } finally {
+        runDemo.disabled = false;
+      }
+    }
+
+    function zoomChart(delta) {
+      chartState.zoom = clamp(chartState.zoom + delta, 0.65, 2.8);
+      applyChartTransform();
+    }
+
+    function rotateChart(delta) {
+      chartState.rotation += delta;
+      applyChartTransform();
+    }
+
+    document.querySelectorAll("[data-location]").forEach((button) => {
+      button.addEventListener("click", () => {
+        locationInput.value = button.dataset.location;
+      });
+    });
+
+    coordinateFile.addEventListener("change", async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      locationInput.value = text.trim();
+      setStatus(`已读取文件：${file.name}`);
+    });
+
+    useBrowserLocation.addEventListener("click", () => {
+      if (!navigator.geolocation) {
+        setStatus("当前浏览器不支持定位 API。", "error");
+        return;
+      }
+      setStatus("正在请求浏览器定位权限...");
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude.toFixed(6);
+          const lon = position.coords.longitude.toFixed(6);
+          locationInput.value = `${lat}, ${lon}`;
+          setStatus(`已获取浏览器定位：${lat}, ${lon}`, "ok");
+        },
+        () => {
+          setStatus("浏览器定位失败或权限被拒绝，可手动输入城市或坐标。", "error");
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+      );
+    });
+
+    chartControls.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-chart-action]");
+      if (!button) return;
+      const action = button.dataset.chartAction;
+      if (action === "zoom-in") {
+        zoomChart(0.18);
+      } else if (action === "zoom-out") {
+        zoomChart(-0.18);
+      } else if (action === "rotate-left") {
+        rotateChart(-30);
+      } else if (action === "rotate-right") {
+        rotateChart(30);
+      } else if (action === "reset-view") {
+        resetChartView();
+      } else if (action === "time-back") {
+        chartState.timeOffsetMinutes -= 30;
+        await refreshChartFromState("时间后退30分钟，正在重新计算星图...");
+      } else if (action === "time-forward") {
+        chartState.timeOffsetMinutes += 30;
+        await refreshChartFromState("时间前进30分钟，正在重新计算星图...");
+      }
+    });
+
+    skyPanel.addEventListener("wheel", (event) => {
+      if (!chartState.layer) return;
+      event.preventDefault();
+      zoomChart(event.deltaY < 0 ? 0.12 : -0.12);
+    }, { passive: false });
+
+    skyPanel.addEventListener("pointerdown", (event) => {
+      if (!chartState.layer || event.target.closest(".chart-controls, .chart-object, .object-drawer")) return;
+      chartState.dragging = true;
+      chartState.dragStartX = event.clientX;
+      chartState.dragStartY = event.clientY;
+      chartState.dragPanX = chartState.panX;
+      chartState.dragPanY = chartState.panY;
+      skyPanel.setPointerCapture(event.pointerId);
+    });
+
+    skyPanel.addEventListener("pointermove", (event) => {
+      if (!chartState.dragging) return;
+      chartState.panX = chartState.dragPanX + event.clientX - chartState.dragStartX;
+      chartState.panY = chartState.dragPanY + event.clientY - chartState.dragStartY;
+      applyChartTransform();
+    });
+
+    function endChartDrag(event) {
+      if (!chartState.dragging) return;
+      chartState.dragging = false;
+      try {
+        skyPanel.releasePointerCapture(event.pointerId);
+      } catch (error) {
+        // Pointer capture may already have been released by the browser.
+      }
+    }
+
+    skyPanel.addEventListener("pointerup", endChartDrag);
+    skyPanel.addEventListener("pointercancel", endChartDrag);
+
+    runDemo.addEventListener("click", runInteractiveDemo);
+  </script>
+</body>
+</html>

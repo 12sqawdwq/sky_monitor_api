@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lingzhu Sky API Guide</title>
+  <meta name="description" content="Lingzhu Sky Assistant API calling guide and Lingzhu plugin configuration.">
+  <style>
+    :root {
+      --bg: #050b16;
+      --panel: rgba(9, 18, 34, 0.82);
+      --panel-strong: rgba(15, 29, 54, 0.94);
+      --line: rgba(143, 176, 255, 0.24);
+      --text: #f0f7ff;
+      --muted: #b3c0d7;
+      --accent: #7de8ff;
+      --blue: #8eb5ff;
+      --gold: #ffd88f;
+      --green: #9ef0c7;
+      --red: #ff9cb7;
+      --shadow: 0 22px 80px rgba(0, 0, 0, 0.42);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 18% 14%, rgba(125, 232, 255, 0.18), transparent 26rem),
+        radial-gradient(circle at 88% 28%, rgba(142, 181, 255, 0.2), transparent 32rem),
+        radial-gradient(circle at 50% 100%, rgba(255, 216, 143, 0.12), transparent 32rem),
+        linear-gradient(180deg, #06101f 0%, #07162a 54%, #030711 100%);
+      font: 15px/1.7 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle, rgba(255,255,255,.82) 0 1px, transparent 1.5px),
+        radial-gradient(circle, rgba(125,232,255,.58) 0 1px, transparent 1.7px);
+      background-size: 120px 120px, 210px 210px;
+      background-position: 20px 12px, 80px 60px;
+      opacity: .42;
+      z-index: -1;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      background: rgba(5, 11, 22, 0.72);
+      backdrop-filter: blur(18px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .nav {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 780;
+      color: var(--text);
+    }
+
+    .sigil {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid rgba(125, 232, 255, 0.55);
+      background:
+        radial-gradient(circle at 50% 50%, #ffffff 0 7%, transparent 8%),
+        radial-gradient(circle at 50% 50%, rgba(125, 232, 255, 0.35) 0 32%, transparent 33%),
+        conic-gradient(from 40deg, #7de8ff, #8eb5ff, #ffd88f, #7de8ff);
+      box-shadow: 0 0 28px rgba(125, 232, 255, .36);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .nav-links a {
+      color: #d9e6ff;
+      font-size: 14px;
+    }
+
+    main {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 46px 22px 80px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+      gap: 28px;
+      align-items: stretch;
+      margin-bottom: 36px;
+    }
+
+    .hero-copy,
+    .terminal,
+    .panel,
+    .step,
+    .table-wrap {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .hero-copy {
+      border-radius: 24px;
+      padding: 32px;
+    }
+
+    .tag {
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(125, 232, 255, 0.1);
+      border: 1px solid rgba(125, 232, 255, 0.28);
+      color: #d9fbff;
+      font-size: 13px;
+    }
+
+    h1 {
+      margin: 18px 0 14px;
+      font-size: clamp(38px, 6vw, 70px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      color: #d4e2fb;
+      font-size: 18px;
+      max-width: 760px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .button {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 15px;
+      border: 1px solid rgba(142, 181, 255, 0.34);
+      border-radius: 8px;
+      background: rgba(142, 181, 255, 0.12);
+      color: var(--text);
+      font-weight: 720;
+    }
+
+    .button.primary {
+      background: linear-gradient(135deg, rgba(125, 232, 255, .96), rgba(142, 181, 255, .94));
+      border-color: transparent;
+      color: #05101e;
+    }
+
+    .terminal {
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .terminal-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--red);
+    }
+
+    .dot:nth-child(2) {
+      background: var(--gold);
+    }
+
+    .dot:nth-child(3) {
+      background: var(--green);
+    }
+
+    .terminal-title {
+      margin-left: 6px;
+      color: #d9e6ff;
+      font-weight: 760;
+      font-size: 13px;
+    }
+
+    pre {
+      margin: 0;
+      padding: 18px;
+      overflow-x: auto;
+      background: rgba(1, 7, 18, 0.64);
+      color: #dfeaff;
+      font: 13px/1.66 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    section {
+      margin-top: 48px;
+      scroll-margin-top: 82px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: clamp(25px, 4vw, 40px);
+      line-height: 1.16;
+    }
+
+    .section-lead {
+      color: var(--muted);
+      max-width: 850px;
+      font-size: 17px;
+      margin: 0 0 22px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .panel,
+    .step {
+      border-radius: 18px;
+      padding: 22px;
+    }
+
+    .panel h3,
+    .step h3 {
+      margin: 0 0 9px;
+    }
+
+    .panel p,
+    .step p,
+    li {
+      color: var(--muted);
+    }
+
+    .step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #05101e;
+      background: var(--accent);
+      font-weight: 820;
+      margin-bottom: 12px;
+    }
+
+    .table-wrap {
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(6, 16, 31, 0.68);
+    }
+
+    th,
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #e9f2ff;
+      background: rgba(125, 232, 255, 0.1);
+    }
+
+    td {
+      color: var(--muted);
+    }
+
+    .ok {
+      color: var(--green);
+      font-weight: 780;
+    }
+
+    .warn {
+      color: var(--gold);
+      font-weight: 780;
+    }
+
+    .note {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border: 1px solid rgba(125, 232, 255, 0.24);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      background: rgba(125, 232, 255, 0.08);
+      color: #dceaff;
+    }
+
+    footer {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 920px) {
+      .hero,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <a class="brand" href="#top"><span class="sigil" aria-hidden="true"></span><span>Sky API Guide</span></a>
+      <div class="nav-links">
+        <a href="#lingzhu">灵珠配置</a>
+        <a href="#params">参数</a>
+        <a href="#response">响应</a>
+        <a href="#examples">示例</a>
+        <a href="/wiki">项目 Wiki</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="tag">Production API · HTTPS · No Auth</span>
+        <h1>星图 API 调用手册</h1>
+        <p class="lead">
+          面向灵珠平台、网页、脚本和其他客户端的调用说明。最小请求只需要 GPS 纬度和经度，
+          服务会返回当前地点可见的亮星、行星和知名深空天体。
+        </p>
+        <div class="buttons">
+          <a class="button primary" href="https://sky.eunoia.top/openapi.json">OpenAPI JSON</a>
+          <a class="button" href="https://sky.eunoia.top/docs">Swagger UI</a>
+          <a class="button" href="https://sky.eunoia.top/health">Health</a>
+        </div>
+      </div>
+
+      <div class="terminal" aria-label="Quick request">
+        <div class="terminal-head">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="terminal-title">quick-start.sh</span>
+        </div>
+        <pre><code>curl "https://sky.eunoia.top/sky/chart?latitude=31.2304&amp;longitude=121.4737"</code></pre>
+      </div>
+    </section>
+
+    <section id="lingzhu">
+      <h2>灵珠平台配置</h2>
+      <p class="section-lead">如果用“导入工具”，优先导入 OpenAPI；如果手动创建工具，按下面字段填写。</p>
+      <div class="grid">
+        <article class="step">
+          <div class="step-num">1</div>
+          <h3>导入地址</h3>
+          <p>在 URL 和原始数据框中填：</p>
+          <pre><code>https://sky.eunoia.top/openapi.json</code></pre>
+        </article>
+        <article class="step">
+          <div class="step-num">2</div>
+          <h3>选择接口</h3>
+          <p>选择 GET 版本，便于平台把坐标作为 Query 参数传入。</p>
+          <pre><code>GET /sky/chart</code></pre>
+        </article>
+        <article class="step">
+          <div class="step-num">3</div>
+          <h3>保留参数</h3>
+          <p>只保留 <code>latitude</code> 和 <code>longitude</code> 两个必填参数。不要把 <code>User-Agent</code> 当作用户输入。</p>
+        </article>
+      </div>
+      <div class="note">
+        当前线上 OpenAPI 的 <code>servers</code> 已固定为 <code>https://sky.eunoia.top</code>。如果平台仍显示 IP，多半是旧导入缓存，删除工具后重新导入即可。
+      </div>
+    </section>
+
+    <section id="params">
+      <h2>请求参数</h2>
+      <p class="section-lead">GET 调用时，参数通过 Query 传入。后端兼容字符串数字，但建议平台侧配置为 Number。</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>参数</th>
+              <th>必填</th>
+              <th>类型</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>latitude</code></td>
+              <td class="ok">是</td>
+              <td>Number</td>
+              <td>GPS 纬度，范围 -90 到 90。例如上海约为 31.2304。</td>
+            </tr>
+            <tr>
+              <td><code>longitude</code></td>
+              <td class="ok">是</td>
+              <td>Number</td>
+              <td>GPS 经度，范围 -180 到 180。例如上海约为 121.4737。</td>
+            </tr>
+            <tr>
+              <td><code>time_utc</code></td>
+              <td>否</td>
+              <td>String</td>
+              <td>UTC 时间，例如 2026-05-16T03:15:00Z。不传则使用当前时间。</td>
+            </tr>
+            <tr>
+              <td><code>total_limit</code></td>
+              <td>否</td>
+              <td>Number</td>
+              <td>返回天体数量，默认 28，范围 8 到 60。</td>
+            </tr>
+            <tr>
+              <td><code>min_altitude_deg</code></td>
+              <td>否</td>
+              <td>Number</td>
+              <td>恒星和深空天体最低高度角，默认 15。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="response">
+      <h2>响应结构</h2>
+      <p class="section-lead">返回值顶层字段为 <code>sky_chart</code>，其中 <code>objects</code> 是可绘制星图的天体数组。</p>
+      <div class="terminal">
+        <div class="terminal-head">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="terminal-title">response.json</span>
+        </div>
+        <pre><code>{
+  "sky_chart": {
+    "observer": {"lat": 31.2304, "lon": 121.4737},
+    "time_utc": "2026-05-16T03:35:45Z",
+    "coordinate_system": {
+      "horizontal": "azimuth_deg: 0 north, 90 east, 180 south, 270 west",
+      "chart_projection": "polar_azimuthal_horizon"
+    },
+    "counts": {"star": 12, "planet": 4, "deep_sky": 6},
+    "objects": [
+      {
+        "category": "star",
+        "display_name": "五车二",
+        "azimuth_deg": 49.03,
+        "altitude_deg": 62.3,
+        "magnitude": 0.08,
+        "chart_x": 0.2324,
+        "chart_y": 0.2018,
+        "chart_radius": 0.3078
+      }
+    ]
+  }
+}</code></pre>
+      </div>
+    </section>
+
+    <section id="examples">
+      <h2>调用示例</h2>
+      <div class="grid">
+        <article class="panel">
+          <h3>上海当前位置</h3>
+          <pre><code>curl "https://sky.eunoia.top/sky/chart?latitude=31.2304&amp;longitude=121.4737"</code></pre>
+        </article>
+        <article class="panel">
+          <h3>限制返回数量</h3>
+          <pre><code>curl "https://sky.eunoia.top/sky/chart?latitude=31.2304&amp;longitude=121.4737&amp;total_limit=8"</code></pre>
+        </article>
+        <article class="panel">
+          <h3>POST 方式</h3>
+          <pre><code>curl -X POST "https://sky.eunoia.top/sky/chart" \
+  -H "Content-Type: application/json" \
+  -d '{"latitude":31.2304,"longitude":121.4737}'</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <section id="status">
+      <h2>上线状态</h2>
+      <div class="grid">
+        <article class="panel">
+          <h3>API 域名</h3>
+          <p class="ok">https://sky.eunoia.top</p>
+          <p>用于灵珠工具和业务调用。</p>
+        </article>
+        <article class="panel">
+          <h3>Wiki 域名</h3>
+          <p class="ok">https://sky.eunoia.top/wiki</p>
+          <p>项目 Wiki 和技术博客，已整合到当前主域名路径下。</p>
+        </article>
+        <article class="panel">
+          <h3>API 文档域名</h3>
+          <p class="ok">https://sky.eunoia.top/wiki/api</p>
+          <p>API 调用手册，包含灵珠配置、参数说明和 cURL 示例。</p>
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      <span>Lingzhu Sky API Guide</span>
+      <span>Service: <a href="https://sky.eunoia.top/health">https://sky.eunoia.top/health</a></span>
+    </footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lingzhu Sky Health</title>
+  <style>
+    :root {
+      --bg: #050b16;
+      --panel: rgba(10, 20, 38, .72);
+      --line: rgba(151, 184, 255, .24);
+      --text: #eff7ff;
+      --muted: #aebdd4;
+      --cyan: #78f2ff;
+      --blue: #91b7ff;
+      --gold: #ffdc91;
+      --green: #9af0c7;
+      --rose: #ff8fb8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 12%, rgba(120,242,255,.18), transparent 28rem),
+        radial-gradient(circle at 82% 18%, rgba(145,183,255,.22), transparent 32rem),
+        radial-gradient(circle at 50% 100%, rgba(255,220,145,.12), transparent 30rem),
+        linear-gradient(180deg, #06101f 0%, #07172a 55%, #030711 100%);
+      font: 15px/1.7 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle, rgba(255,255,255,.82) 0 1px, transparent 1.5px),
+        radial-gradient(circle, rgba(120,242,255,.58) 0 1px, transparent 1.7px);
+      background-size: 120px 120px, 210px 210px;
+      background-position: 18px 18px, 88px 64px;
+      opacity: .44;
+      z-index: -1;
+    }
+
+    a {
+      color: var(--cyan);
+      text-decoration: none;
+    }
+
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 42px 20px 70px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+    }
+
+    .mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 42% 32%, #fff 0 9%, transparent 10%),
+        conic-gradient(from 210deg, var(--cyan), var(--blue), var(--gold), var(--cyan));
+      box-shadow: 0 0 30px rgba(120,242,255,.36);
+    }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(280px, .82fr) minmax(0, 1.18fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .glass {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.11), rgba(255,255,255,.025)),
+        var(--panel);
+      backdrop-filter: blur(24px) saturate(140%);
+      box-shadow:
+        0 28px 90px rgba(0,0,0,.42),
+        inset 0 1px 0 rgba(255,255,255,.14);
+      overflow: hidden;
+    }
+
+    .glass::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(118deg, rgba(255,255,255,.16), transparent 32%),
+        radial-gradient(circle at 20% 12%, rgba(120,242,255,.14), transparent 12rem);
+    }
+
+    .status-card {
+      min-height: 430px;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      text-align: center;
+    }
+
+    .orb {
+      position: relative;
+      width: 220px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(154,240,199,.24), transparent 36%),
+        radial-gradient(circle at 50% 50%, rgba(120,242,255,.14), transparent 62%);
+      border: 1px solid rgba(120,242,255,.28);
+      box-shadow: 0 0 80px rgba(120,242,255,.18);
+    }
+
+    .orb::before,
+    .orb::after {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border-radius: 50%;
+      border: 1px solid rgba(120,242,255,.32);
+      animation: pulse 2.8s cubic-bezier(.2,.8,.2,1) infinite;
+    }
+
+    .orb::after {
+      inset: 44px;
+      animation-delay: .7s;
+    }
+
+    .orb strong {
+      font-size: 46px;
+      letter-spacing: 0;
+    }
+
+    .orb span {
+      display: block;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .details {
+      padding: 28px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(34px, 6vw, 64px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      color: #d6e5ff;
+      max-width: 760px;
+      font-size: 18px;
+      margin: 0 0 24px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      border: 1px solid rgba(151,184,255,.2);
+      border-radius: 16px;
+      padding: 16px;
+      background: rgba(2,8,18,.36);
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 23px;
+      margin-top: 4px;
+      word-break: break-word;
+    }
+
+    .panel-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .panel {
+      padding: 18px;
+      min-height: 160px;
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .panel p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .ok {
+      color: var(--green);
+    }
+
+    .bad {
+      color: var(--rose);
+    }
+
+    .loading {
+      color: var(--gold);
+    }
+
+    pre {
+      margin: 18px 0 0;
+      padding: 16px;
+      border: 1px solid rgba(151,184,255,.2);
+      border-radius: 14px;
+      overflow: auto;
+      max-height: 330px;
+      color: #dfeaff;
+      background: rgba(1,7,18,.58);
+      font: 13px/1.6 "SFMono-Regular", Consolas, monospace;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: .14;
+        transform: scale(.78);
+      }
+      50% {
+        opacity: .8;
+      }
+      100% {
+        opacity: 0;
+        transform: scale(1.42);
+      }
+    }
+
+    @media (max-width: 880px) {
+      .hero,
+      .grid,
+      .panel-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav class="topbar">
+      <a class="brand" href="/wiki"><span class="mark" aria-hidden="true"></span><span>Sky Health</span></a>
+      <div class="links">
+        <a href="/wiki">项目 Wiki</a>
+        <a href="/wiki/api">API 调用</a>
+        <a href="https://sky.eunoia.top/docs">OpenAPI</a>
+      </div>
+    </nav>
+
+    <section class="hero">
+      <div class="glass status-card">
+        <div class="orb">
+          <div>
+            <strong id="statusText" class="loading">...</strong>
+            <span id="statusSub">正在检测服务</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass details">
+        <h1>服务健康星盘</h1>
+        <p class="lead">这里把后端健康检查、OpenAPI、星图接口和网络延迟做成可视化仪表盘。原始 JSON 健康检查仍保持在 <code>/health</code>。</p>
+
+        <div class="grid">
+          <div class="metric"><span>API 服务</span><strong id="apiStatus">检测中</strong></div>
+          <div class="metric"><span>版本</span><strong id="version">-</strong></div>
+          <div class="metric"><span>星表数据库</span><strong id="catalog">-</strong></div>
+          <div class="metric"><span>响应延迟</span><strong id="latency">-</strong></div>
+        </div>
+
+        <pre id="rawJson">等待健康检查结果...</pre>
+      </div>
+    </section>
+
+    <section class="panel-grid">
+      <article class="glass panel">
+        <h2>OpenAPI</h2>
+        <p id="openapiStatus">检测中...</p>
+      </article>
+      <article class="glass panel">
+        <h2>星图接口</h2>
+        <p id="chartStatus">检测中...</p>
+      </article>
+      <article class="glass panel">
+        <h2>最后刷新</h2>
+        <p id="updatedAt">-</p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = "https://sky.eunoia.top";
+    const statusText = document.getElementById("statusText");
+    const statusSub = document.getElementById("statusSub");
+    const apiStatus = document.getElementById("apiStatus");
+    const version = document.getElementById("version");
+    const catalog = document.getElementById("catalog");
+    const latency = document.getElementById("latency");
+    const rawJson = document.getElementById("rawJson");
+    const openapiStatus = document.getElementById("openapiStatus");
+    const chartStatus = document.getElementById("chartStatus");
+    const updatedAt = document.getElementById("updatedAt");
+
+    function setOverall(ok, message) {
+      statusText.textContent = ok ? "OK" : "ERR";
+      statusText.className = ok ? "ok" : "bad";
+      statusSub.textContent = message;
+      apiStatus.textContent = ok ? "运行中" : "异常";
+      apiStatus.className = ok ? "ok" : "bad";
+    }
+
+    async function timedJson(url) {
+      const started = performance.now();
+      const response = await fetch(url, { headers: { "Accept": "application/json" } });
+      const elapsed = Math.round(performance.now() - started);
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      return { data: await response.json(), elapsed };
+    }
+
+    async function refresh() {
+      try {
+        const health = await timedJson(`${API_BASE}/health`);
+        setOverall(health.data.status === "ok", "后端健康检查通过");
+        version.textContent = health.data.version || "-";
+        catalog.textContent = health.data.catalog_db_exists ? "已加载" : "未找到";
+        catalog.className = health.data.catalog_db_exists ? "ok" : "bad";
+        latency.textContent = `${health.elapsed} ms`;
+        rawJson.textContent = JSON.stringify(health.data, null, 2);
+      } catch (error) {
+        setOverall(false, "健康检查失败");
+        rawJson.textContent = String(error.message || error);
+      }
+
+      try {
+        const openapi = await timedJson(`${API_BASE}/openapi.json`);
+        openapiStatus.innerHTML = `<span class="ok">可访问</span> · ${openapi.data.info?.version || "unknown"} · ${openapi.elapsed} ms`;
+      } catch (error) {
+        openapiStatus.innerHTML = `<span class="bad">失败</span> · ${error.message}`;
+      }
+
+      try {
+        const chart = await timedJson(`${API_BASE}/sky/chart?latitude=31.4591&longitude=121.1298&total_limit=8`);
+        const counts = chart.data.sky_chart?.counts || {};
+        chartStatus.innerHTML = `<span class="ok">可调用</span> · 恒星 ${counts.star || 0} · 行星 ${counts.planet || 0} · ${chart.elapsed} ms`;
+      } catch (error) {
+        chartStatus.innerHTML = `<span class="bad">失败</span> · ${error.message}`;
+      }
+
+      updatedAt.textContent = new Date().toLocaleString();
+    }
+
+    refresh();
+    window.setInterval(refresh, 60000);
+  </script>
+</body>
+</html>

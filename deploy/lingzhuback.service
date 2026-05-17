@@ -1,0 +1,17 @@
+[Unit]
+Description=Rokid Sky Assistant FastAPI Backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/lingzhuback
+Environment=PYTHONUNBUFFERED=1
+Environment=SKY_CATALOG_DB=/opt/lingzhuback/data/catalog.db
+Environment=SKY_PUBLIC_BASE_URL=https://sky.eunoia.top
+ExecStart=/opt/lingzhuback/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
