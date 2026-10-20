@@ -1,0 +1,23 @@
+{
+  "name": "sky-atlas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Multi-scale web sky atlas: from the observer's sky to the observable universe.",
+  "scripts": {
+    "data": "node scripts/build-stars.mjs",
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@fontsource/noto-serif-sc": "^5.2.8",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.180.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9"
+  }
+}

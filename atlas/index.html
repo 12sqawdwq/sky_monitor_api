@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#050505" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%23050505%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%229%22 fill=%22none%22 stroke=%22%23c58a55%22 stroke-width=%221.5%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%222%22 fill=%22%23e7e1d5%22/%3E%3C/svg%3E" />
+    <title>星海图志 · Sky Atlas</title>
+    <meta name="description" content="一张可交互的多尺度星图：从头顶的星空、太阳系、银河系，一直到可观测宇宙的边界。" />
+  </head>
+  <body data-panel="closed">
+    <div class="atlas">
+      <div class="stage" id="stage"></div>
+      <div class="labels" id="labels"></div>
+      <div class="vignette" aria-hidden="true"></div>
+
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand__mark" aria-hidden="true"></span>
+          <div>
+            <div class="brand__zh">星海图志</div>
+            <div class="brand__en">Sky Atlas · from your sky to the cosmic horizon</div>
+          </div>
+        </div>
+        <div class="search" id="search">
+          <input type="search" autocomplete="off" spellcheck="false" placeholder="搜索天体 · 织女星、M31、后发座星系团" aria-label="搜索天体" />
+          <kbd class="search__kbd">/</kbd>
+          <div class="search__results"></div>
+        </div>
+        <nav class="actions">
+          <button type="button" class="btn btn--ghost" data-action="tonight">今晚星空</button>
+          <button type="button" class="btn btn--ghost" data-action="tour">尺度巡游</button>
+        </nav>
+      </header>
+
+      <aside class="ladder" id="ladder" aria-label="尺度"></aside>
+
+      <div class="readout">
+        <div class="readout__regime">
+          <span class="readout__zh" id="regime-zh">恒星邻域</span>
+          <span class="readout__en" id="regime-en">Stellar Neighbourhood</span>
+        </div>
+        <div class="readout__row"><span class="readout__k">焦点</span><span id="focus-name">太阳</span></div>
+        <div class="readout__row"><span class="readout__k">视距</span><span id="view-distance">—</span></div>
+        <div class="scalebar"><span class="scalebar__bar" id="scalebar"></span><span class="scalebar__label" id="scalebar-label"></span></div>
+      </div>
+
+      <aside class="archive" id="archive" aria-label="天体档案">
+        <button type="button" class="archive__close icon-btn" aria-label="关闭档案">×</button>
+        <div class="archive__body"></div>
+      </aside>
+
+      <div class="caption" id="caption" aria-live="polite">
+        <div class="caption__step" id="caption-step"></div>
+        <div class="caption__text" id="caption-text"></div>
+        <button type="button" class="caption__stop chip" id="caption-stop">结束巡游</button>
+      </div>
+
+      <footer class="credits">恒星：HYG v3 星表（真实三维坐标）· 今晚星空：sky.eunoia.top · 银河结构与宇宙网为示意模型</footer>
+
+      <section class="intro" id="intro">
+        <div class="intro__inner">
+          <div class="intro__eyebrow">A Cartography of the Night Sky</div>
+          <h1 class="intro__title">星海图志</h1>
+          <p class="intro__lede">从你头顶的这片夜空出发，经过太阳系、银河系和本星系群，一直走到可观测宇宙的边界：横跨约十六个数量级。</p>
+          <ul class="intro__hints">
+            <li><b>滚轮 / 双指</b>缩放尺度</li>
+            <li><b>拖拽</b>环顾四周</li>
+            <li><b>点击天体</b>打开档案</li>
+            <li><b>/</b>搜索</li>
+          </ul>
+          <div class="intro__actions">
+            <button type="button" class="btn" id="intro-enter" disabled>正在载入星表…</button>
+            <button type="button" class="btn btn--ghost" id="intro-tour" disabled>从地球出发巡游</button>
+          </div>
+        </div>
+      </section>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
