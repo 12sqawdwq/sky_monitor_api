@@ -16,6 +16,7 @@ import { CosmicWebLayer, HorizonLayer } from './layers/cosmic';
 import { GalaxiesLayer } from './layers/galaxies';
 import { GalaxyLayer } from './layers/galaxy';
 import { GraticuleLayer } from './layers/graticule';
+import { createDeepSkyModels } from './layers/nebulae';
 import { SolarLayer } from './layers/solar';
 import { StarLayer } from './layers/stars';
 import type { Annotation, FrameState, Layer } from './layers/types';
@@ -324,7 +325,8 @@ async function boot(): Promise<void> {
   const galaxies = new GalaxiesLayer();
   const cosmic = new CosmicWebLayer();
   const horizon = new HorizonLayer();
-  layers.push(horizon, cosmic, galaxy, galaxies, graticule, solar);
+  const catalogObjects = buildCatalogObjects();
+  layers.push(horizon, cosmic, galaxy, galaxies, graticule, solar, ...createDeepSkyModels(catalogObjects));
   for (const layer of layers) scene.add(layer.group);
   requestAnimationFrame(loop);
 
@@ -352,7 +354,7 @@ async function boot(): Promise<void> {
     ui.enter.textContent = t('星表载入失败，仍可探索', 'Star catalogue failed to load; explore anyway');
   }
 
-  objects = [...solar.objects, ...buildCatalogObjects(), ...starObjects];
+  objects = [...solar.objects, ...catalogObjects, ...starObjects];
   for (const object of objects) byId.set(object.id, object);
   labels.setItems([
     ...objects.map(itemFromObject),

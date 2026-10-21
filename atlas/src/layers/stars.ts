@@ -44,8 +44,11 @@ export class StarLayer implements Layer {
     u.uCamPos.value.set(frame.cameraWorld[0], frame.cameraWorld[1], frame.cameraWorld[2]);
     u.uDpr.value = frame.dpr;
     // Once the camera leaves the neighbourhood, keep every catalogued star as
-    // a faint dot so the shape of the surveyed bubble stays readable.
-    u.uFloor.value = smoothstep(1.4, 2.8, frame.logR) * 0.16;
+    // a faint dot so the shape of the surveyed bubble stays readable, but only
+    // while the Sun is within the view. Seen from a distant cluster or nebula
+    // these stars are far too faint to see, so they keep their true brightness.
+    const sunOffset = Math.hypot(frame.focus[0], frame.focus[1], frame.focus[2]) / frame.radius;
+    u.uFloor.value = smoothstep(1.4, 2.8, frame.logR) * 0.16 * (1 - smoothstep(1.5, 4, sunOffset));
     u.uOpacity.value = 1 - smoothstep(4.3, 5.1, frame.logR);
     u.uSizeScale.value = 1 - smoothstep(2.5, 4.2, frame.logR) * 0.35;
     this.group.visible = u.uOpacity.value > 0.003;
