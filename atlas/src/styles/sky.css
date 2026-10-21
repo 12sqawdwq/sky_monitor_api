@@ -324,3 +324,10 @@ body[data-mode='sky'] :is(.topbar, .ladder, .readout, .labels, .archive, .captio
   .sky.has-card .sky__picks { opacity: 0; pointer-events: none; }
   .sky.has-card .sky__picks * { pointer-events: none; }
 }
+
+/* English: Latin labels need far less tracking. */
+html[lang='en'] .sky-label--con .sky-label__text { letter-spacing: 0.14em; text-transform: uppercase; font-size: 10px; }
+html[lang='en'] .sky-label--sign .sky-label__text { letter-spacing: 0.12em; }
+html[lang='en'] .sky-label--mansion .sky-label__text { letter-spacing: 0.04em; }
+html[lang='en'] .sky-label--xiang .sky-label__text { letter-spacing: 0.2em; text-transform: uppercase; font-size: 11px; }
+html[lang='en'] .sky-label--cardinal .sky-label__text { letter-spacing: 0.04em; }

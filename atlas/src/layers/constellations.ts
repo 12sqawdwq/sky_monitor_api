@@ -71,7 +71,7 @@ export class ConstellationLayer implements Layer {
       if (used.length) {
         const centre: Vec3 = [0, 0, 0];
         for (const p of used) for (let a = 0; a < 3; a += 1) centre[a] += p[a] / used.length;
-        this.annotations.push({ key: `con3d:${record.id}`, zh: constellationName(record.id), pos: centre, window: [-4.6, 1.1], priority: 0.9, style: 'con' });
+        this.annotations.push({ key: `con3d:${record.id}`, zh: constellationName(record.id), nameEn: constellationName(record.id), subEn: '', pos: centre, window: [-4.6, 1.1], priority: 0.9, style: 'con' });
       }
     }
 

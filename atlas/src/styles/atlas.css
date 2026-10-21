@@ -526,3 +526,68 @@ body[data-panel='open'] .caption { left: calc(50% - var(--archive-w) / 2 - 10px)
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; }
 }
+
+/* --------------------------------------------------------------- services */
+
+.actions { align-items: center; }
+.services { position: relative; }
+.services > summary { list-style: none; display: inline-block; }
+.services > summary::-webkit-details-marker { display: none; }
+.services > summary::after { content: ' ▾'; font-size: 10px; opacity: 0.7; }
+.services[open] > summary { border-color: var(--line-bright); color: var(--ink); }
+.services__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 320px;
+  max-width: calc(100vw - 2 * var(--gutter));
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--panel-solid);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  z-index: 40;
+}
+.services__group {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 10px 10px 4px;
+}
+.services__group:first-child { padding-top: 4px; }
+.services__item {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 2px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.services__item:hover, .services__item:focus-visible { background: rgba(197, 138, 85, 0.1); outline: none; }
+.services__name { font-family: var(--serif); font-size: 14px; }
+.services__desc { font-size: 12px; color: var(--ink-dim); line-height: 1.45; }
+.services__path { font-family: var(--mono); font-size: 10.5px; color: var(--copper); }
+.lang-toggle { min-width: 46px; }
+
+/* English: Latin text needs far less tracking than the Chinese titles. */
+html[lang='en'] .brand__zh { letter-spacing: 0.12em; }
+html[lang='en'] .intro__title { letter-spacing: 0.1em; padding-left: 0.1em; }
+html[lang='en'] .readout__zh { letter-spacing: 0.04em; }
+html[lang='en'] .ladder__name { letter-spacing: 0.04em; }
+html[lang='en'] .archive__title { letter-spacing: 0.01em; }
+html[lang='en'] .label--region .label__zh { letter-spacing: 0.22em; text-transform: uppercase; font-size: 11px; }
+html[lang='en'] .label--region .label__en { text-transform: none; letter-spacing: 0.3em; }
+html[lang='en'] .label--con .label__zh { letter-spacing: 0.14em; text-transform: uppercase; font-size: 10px; }
+
+@media (max-width: 900px) {
+  .actions { gap: 6px; }
+  .actions [data-action='tour'] { display: none; }
+  .actions .btn { padding: 8px 11px; }
+}
+
+/* Keep the language toggle and services menu usable over the intro overlay. */
+.topbar { z-index: 45; }

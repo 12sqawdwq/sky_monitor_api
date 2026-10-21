@@ -23,6 +23,7 @@ import { ArchivePanel } from './ui/archive';
 import { itemFromAnnotation, itemFromObject, LabelLayer } from './ui/labels';
 import { regimeFor, ScaleLadder, scaleBar, STOPS, type ScaleStop } from './ui/scale';
 import { SearchBox } from './ui/search';
+import { applyStaticTranslations, isEn, nameOf, setLang, t } from './core/i18n';
 import { SkyView } from './sky/skyview';
 
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector(selector) as T;
@@ -83,7 +84,7 @@ const sky = skyView;
 /** Sub-features live at sky.eunoia.top/<route>. */
 function setRoute(route: string): void {
   const path = `${import.meta.env.BASE_URL}${route}`;
-  if (window.location.pathname !== path) history.replaceState(null, '', path);
+  if (window.location.pathname !== path) history.replaceState(null, '', `${path}${window.location.search}`);
 }
 
 function openSky(object?: AtlasObject): void {
@@ -94,6 +95,8 @@ function openSky(object?: AtlasObject): void {
   sky.open(object);
   setRoute('tonight');
 }
+
+applyStaticTranslations();
 
 const ui = {
   regimeZh: $('#regime-zh'),
@@ -110,12 +113,12 @@ const ui = {
   introTour: $<HTMLButtonElement>('#intro-tour')
 };
 
-let focusName = '太阳';
+let focusName = t('太阳', 'Sun');
 
 function select(object: AtlasObject, fly = true): void {
   stopTour();
   selected = object;
-  focusName = object.zh;
+  focusName = nameOf(object);
   archive.show(object);
   if (fly) void controls.flyTo(object.pos, frameLogR(object));
 }
@@ -149,8 +152,8 @@ function stopTour(): void {
 }
 
 function showCaption(stop: ScaleStop, index: number): void {
-  ui.captionStep.textContent = `${String(index + 1).padStart(2, '0')} / ${String(STOPS.length).padStart(2, '0')} · ${stop.en}`;
-  ui.captionText.textContent = `${stop.zh}：${stop.caption}`;
+  ui.captionStep.textContent = `${String(index + 1).padStart(2, '0')} / ${String(STOPS.length).padStart(2, '0')} · ${isEn ? stop.zh : stop.en}`;
+  ui.captionText.textContent = isEn ? `${stop.en}: ${stop.caption}` : `${stop.zh}：${stop.caption}`;
   ui.caption.classList.add('is-active');
 }
 
@@ -166,7 +169,7 @@ async function runTour(): Promise<void> {
     const stop = STOPS[i];
     const target = byId.get(stop.focus);
     if (!target) continue;
-    focusName = target.zh;
+    focusName = nameOf(target);
     showCaption(stop, i);
     await controls.flyTo(target.pos, stop.logR, i === 0 ? 3.2 : undefined);
     if (token !== tourToken) return;
@@ -186,7 +189,7 @@ function jump(stop: ScaleStop): void {
   stopTour();
   const target = byId.get(stop.focus);
   if (!target) return;
-  focusName = target.zh;
+  focusName = nameOf(target);
   deselect();
   void controls.flyTo(target.pos, stop.logR);
 }
@@ -194,6 +197,19 @@ ladder.onJump = jump;
 
 document.querySelector('[data-action="tonight"]')?.addEventListener('click', () => openSky());
 document.querySelector('[data-action="tour"]')?.addEventListener('click', () => void runTour());
+document.querySelector('[data-action="lang"]')?.addEventListener('click', () => setLang(isEn ? 'zh' : 'en'));
+
+// Services menu (<details>): close on outside click or Escape.
+const services = $<HTMLDetailsElement>('#services');
+document.addEventListener('pointerdown', event => {
+  if (services.open && !services.contains(event.target as Node)) services.open = false;
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && services.open) {
+    services.open = false;
+    services.querySelector('summary')?.focus();
+  }
+});
 
 window.addEventListener('keydown', event => {
   if (event.target instanceof HTMLInputElement || sky.active) return;
@@ -284,8 +300,8 @@ function loop(now: number): void {
   if (hudTick > 0.08) {
     hudTick = 0;
     const regime = regimeFor(frame.logR, Math.hypot(...frame.focus), focusName);
-    ui.regimeZh.textContent = regime.zh;
-    ui.regimeEn.textContent = regime.en;
+    ui.regimeZh.textContent = isEn ? regime.en : regime.zh;
+    ui.regimeEn.textContent = isEn ? regime.zh : regime.en;
     ui.focus.textContent = focusName;
     ui.distance.textContent = formatDistance(frame.radius);
     const bar = scaleBar(frame.radius, frame.pixelScale);
@@ -328,10 +344,10 @@ async function boot(): Promise<void> {
     } catch (error) {
       console.warn('constellation figures unavailable', error);
     }
-    ui.enter.textContent = '开始探索';
+    ui.enter.textContent = t('开始探索', 'Start exploring');
   } catch (error) {
     console.error(error);
-    ui.enter.textContent = '星表载入失败，仍可探索';
+    ui.enter.textContent = t('星表载入失败，仍可探索', 'Star catalogue failed to load; explore anyway');
   }
 
   objects = [...solar.objects, ...buildCatalogObjects(), ...starObjects];

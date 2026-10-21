@@ -56,6 +56,8 @@ three.js 前端把它画成一张跨越 16 个数量级的交互星图，以及�
   - 手机上可以开启陀螺仪，直接对准天空。
   - 信息卡给出高度、方位、升起/中天/落下时间，还可以一键跳回三维图谱。
 - **今晚推荐**：直接来自本仓库的 `/sky/chart` 接口；后端不可达时自动改用本地计算。
+- **中英双语**：默认英文，右上角一键切换中文（也可用 `?lang=zh` / `?lang=en`），选择会被记住。
+- **服务目录**：首页“Services / 服务”菜单直达 Wiki、服务状态、API 手册、Swagger、ReDoc、OpenAPI 和健康检查。
 
 ## 架构
 
@@ -75,7 +77,7 @@ three.js 前端把它画成一张跨越 16 个数量级的交互星图，以及�
 | `app/` | FastAPI 入口、天文计算、SQLite 星表查询、深空天体、推理语料 |
 | `data/` | 可提交的中文观测语料 |
 | `scripts/` | 下载 HYG 星表和 DE421 星历，构建 SQLite 星表和城市索引 |
-| `site/` | 静态 Wiki 和 API 说明页 |
+| `site/wiki/` | 静态 Wiki（`/wiki`）、API 调用手册（`/wiki/api`）、服务状态页（`/wiki/health`），共用 `wiki.css`，与星图同一套配色 |
 | `deploy/` | systemd 和 nginx 示例（含前端路由） |
 | `docs/media/` | README 用的截图和录屏 |
 | `tests/` | 后端单元测试 |

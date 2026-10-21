@@ -1,3 +1,4 @@
+import { isEn } from './i18n';
 // Coordinate conventions
 //
 // Scene frame: galactic Cartesian, Sun at the origin, light-years, mapped to
@@ -160,7 +161,7 @@ export function horizonPosition(raDeg: number, decDeg: number, observer: Observe
   };
 }
 
-const DIRECTIONS = ['北', '东北', '东', '东南', '南', '西南', '西', '西北'];
+const DIRECTIONS = isEn ? ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] : ['北', '东北', '东', '东南', '南', '西南', '西', '西北'];
 
 export function azimuthName(az: number): string {
   return DIRECTIONS[Math.round(az / 45) % 8];

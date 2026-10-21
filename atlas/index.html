@@ -1,12 +1,13 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#050505" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%23050505%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%229%22 fill=%22none%22 stroke=%22%23c58a55%22 stroke-width=%221.5%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%222%22 fill=%22%23e7e1d5%22/%3E%3C/svg%3E" />
-    <title>星海图志 · Sky Atlas</title>
-    <meta name="description" content="一张可交互的多尺度星图：从头顶的星空、太阳系、银河系，一直到可观测宇宙的边界。" />
+    <title>Sky Atlas · 星海图志</title>
+    <meta name="zh-title" content="星海图志 · Sky Atlas" />
+    <meta name="description" content="An interactive multi-scale star map: from the sky above you, through the Solar System and the Milky Way, to the edge of the observable universe." />
   </head>
   <body data-panel="closed">
     <div class="atlas">
@@ -18,60 +19,104 @@
         <div class="brand">
           <span class="brand__mark" aria-hidden="true"></span>
           <div>
-            <div class="brand__zh">星海图志</div>
-            <div class="brand__en">Sky Atlas · from your sky to the cosmic horizon</div>
+            <div class="brand__zh" data-zh="星海图志">Sky Atlas</div>
+            <div class="brand__en" data-zh="Sky Atlas · from your sky to the cosmic horizon">星海图志 · from your sky to the cosmic horizon</div>
           </div>
         </div>
         <div class="search" id="search">
-          <input type="search" autocomplete="off" spellcheck="false" placeholder="搜索天体 · 织女星、M31、后发座星系团" aria-label="搜索天体" />
+          <input type="search" autocomplete="off" spellcheck="false" placeholder="Search · Vega, M31, Coma Cluster" data-zh-placeholder="搜索天体 · 织女星、M31、后发座星系团" aria-label="Search the atlas" data-zh-label="搜索天体" />
           <kbd class="search__kbd">/</kbd>
           <div class="search__results"></div>
         </div>
         <nav class="actions">
-          <button type="button" class="btn btn--ghost" data-action="tonight">今晚星空</button>
-          <button type="button" class="btn btn--ghost" data-action="tour">尺度巡游</button>
+          <button type="button" class="btn btn--ghost" data-action="tonight" data-zh="今晚星空">Tonight's Sky</button>
+          <button type="button" class="btn btn--ghost" data-action="tour" data-zh="尺度巡游">Scale Tour</button>
+          <details class="services" id="services">
+            <summary class="btn btn--ghost" data-zh="服务">Services</summary>
+            <div class="services__menu">
+              <div class="services__group" data-zh="项目页面">Pages</div>
+              <a class="services__item" href="/wiki">
+                <span class="services__name" data-zh="星空 Wiki">Sky Wiki</span>
+                <span class="services__desc" data-zh="架构、星表、交互星图演示和部署说明">Architecture, catalogue, chart demo and deployment notes</span>
+                <span class="services__path">/wiki</span>
+              </a>
+              <a class="services__item" href="/wiki/health">
+                <span class="services__name" data-zh="服务状态">Service status</span>
+                <span class="services__desc" data-zh="后端、星表、OpenAPI 和延迟的健康仪表盘">Health dashboard: backend, catalogue, OpenAPI, latency</span>
+                <span class="services__path">/wiki/health</span>
+              </a>
+              <a class="services__item" href="/wiki/api">
+                <span class="services__name" data-zh="API 调用手册">API guide</span>
+                <span class="services__desc" data-zh="灵珠平台配置、参数、响应和示例">Lingzhu setup, parameters, responses and examples</span>
+                <span class="services__path">/wiki/api</span>
+              </a>
+              <div class="services__group" data-zh="开发者">Developers</div>
+              <a class="services__item" href="/docs">
+                <span class="services__name" data-zh="接口调试（Swagger）">API explorer (Swagger)</span>
+                <span class="services__desc" data-zh="在浏览器里直接调用每个接口">Call every endpoint from the browser</span>
+                <span class="services__path">/docs</span>
+              </a>
+              <a class="services__item" href="/redoc">
+                <span class="services__name" data-zh="接口参考（ReDoc）">API reference (ReDoc)</span>
+                <span class="services__path">/redoc</span>
+              </a>
+              <a class="services__item" href="/openapi.json">
+                <span class="services__name">OpenAPI</span>
+                <span class="services__path">/openapi.json</span>
+              </a>
+              <a class="services__item" href="/health">
+                <span class="services__name" data-zh="健康检查（JSON）">Health check (JSON)</span>
+                <span class="services__path">/health</span>
+              </a>
+              <a class="services__item" href="https://github.com/12sqawdwq/sky_monitor_api" target="_blank" rel="noopener">
+                <span class="services__name" data-zh="源代码 · GitHub">Source · GitHub</span>
+                <span class="services__path">github.com/12sqawdwq/sky_monitor_api ↗</span>
+              </a>
+            </div>
+          </details>
+          <button type="button" class="chip lang-toggle" data-action="lang" aria-label="切换到中文" data-zh-label="Switch to English" data-zh="EN">中文</button>
         </nav>
       </header>
 
-      <aside class="ladder" id="ladder" aria-label="尺度"></aside>
+      <aside class="ladder" id="ladder" aria-label="Scale" data-zh-label="尺度"></aside>
 
       <div class="readout">
         <div class="readout__regime">
           <span class="readout__zh" id="regime-zh">恒星邻域</span>
           <span class="readout__en" id="regime-en">Stellar Neighbourhood</span>
         </div>
-        <div class="readout__row"><span class="readout__k">焦点</span><span id="focus-name">太阳</span></div>
-        <div class="readout__row"><span class="readout__k">视距</span><span id="view-distance">—</span></div>
+        <div class="readout__row"><span class="readout__k" data-zh="焦点">Focus</span><span id="focus-name">Sun</span></div>
+        <div class="readout__row"><span class="readout__k" data-zh="视距">View</span><span id="view-distance">—</span></div>
         <div class="scalebar"><span class="scalebar__bar" id="scalebar"></span><span class="scalebar__label" id="scalebar-label"></span></div>
       </div>
 
-      <aside class="archive" id="archive" aria-label="天体档案">
-        <button type="button" class="archive__close icon-btn" aria-label="关闭档案">×</button>
+      <aside class="archive" id="archive" aria-label="Archive" data-zh-label="天体档案">
+        <button type="button" class="archive__close icon-btn" aria-label="Close" data-zh-label="关闭档案">×</button>
         <div class="archive__body"></div>
       </aside>
 
       <div class="caption" id="caption" aria-live="polite">
         <div class="caption__step" id="caption-step"></div>
         <div class="caption__text" id="caption-text"></div>
-        <button type="button" class="caption__stop chip" id="caption-stop">结束巡游</button>
+        <button type="button" class="caption__stop chip" id="caption-stop" data-zh="结束巡游">End tour</button>
       </div>
 
-      <footer class="credits">恒星：HYG v3 星表（真实三维坐标）· 今晚星空：sky.eunoia.top · 银河结构与宇宙网为示意模型</footer>
+      <footer class="credits" data-zh="恒星：HYG v3 星表（真实三维坐标）· 今晚星空：sky.eunoia.top · 银河结构与宇宙网为示意模型">Stars: HYG v3 catalogue (true 3D positions) · Tonight's sky: sky.eunoia.top · Milky Way structure and cosmic web are illustrative models</footer>
 
       <section class="intro" id="intro">
         <div class="intro__inner">
           <div class="intro__eyebrow">A Cartography of the Night Sky</div>
-          <h1 class="intro__title">星海图志</h1>
-          <p class="intro__lede">从你头顶的这片夜空出发，经过太阳系、银河系和本星系群，一直走到可观测宇宙的边界：横跨约十六个数量级。</p>
+          <h1 class="intro__title" data-zh="星海图志">Sky Atlas</h1>
+          <p class="intro__lede" data-zh="从你头顶的这片夜空出发，经过太阳系、银河系和本星系群，一直走到可观测宇宙的边界：横跨约十六个数量级。">Start from the sky above your head, pass the Solar System, the Milky Way and the Local Group, and keep going to the edge of the observable universe: sixteen orders of magnitude.</p>
           <ul class="intro__hints">
-            <li><b>滚轮 / 双指</b>缩放尺度</li>
-            <li><b>拖拽</b>环顾四周</li>
-            <li><b>点击天体</b>打开档案</li>
-            <li><b>/</b>搜索</li>
+            <li data-zh-html="&lt;b&gt;滚轮 / 双指&lt;/b&gt;缩放尺度"><b>Scroll / pinch</b> to change scale</li>
+            <li data-zh-html="&lt;b&gt;拖拽&lt;/b&gt;环顾四周"><b>Drag</b> to look around</li>
+            <li data-zh-html="&lt;b&gt;点击天体&lt;/b&gt;打开档案"><b>Click</b> an object for its record</li>
+            <li data-zh-html="&lt;b&gt;/&lt;/b&gt;搜索"><b>/</b> to search</li>
           </ul>
           <div class="intro__actions">
-            <button type="button" class="btn" id="intro-enter" disabled>正在载入星表…</button>
-            <button type="button" class="btn btn--ghost" id="intro-tour" disabled>从地球出发巡游</button>
+            <button type="button" class="btn" id="intro-enter" disabled data-zh="正在载入星表…">Loading the star catalogue…</button>
+            <button type="button" class="btn btn--ghost" id="intro-tour" disabled data-zh="从地球出发巡游">Tour from Earth</button>
           </div>
         </div>
       </section>

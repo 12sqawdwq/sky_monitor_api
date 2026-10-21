@@ -1,5 +1,6 @@
 import { eclipticToEquatorial, equatorialToRaDec } from '../core/coords';
 import { sunPosition } from '../sky/astro';
+import { isEn } from '../core/i18n';
 
 /** The twelve zodiac constellations (Ophiuchus also crosses the ecliptic). */
 export const ZODIAC_CONSTELLATIONS = new Set(['Ari', 'Tau', 'Gem', 'Cnc', 'Leo', 'Vir', 'Lib', 'Sco', 'Sgr', 'Cap', 'Aqr', 'Psc']);
@@ -9,13 +10,22 @@ const SIGNPOSTS = ['And', 'Aql', 'Aur', 'Boo', 'CMa', 'Car', 'Cas', 'Cen', 'Cet'
 export const ESSENTIAL_CONSTELLATIONS = new Set([...ZODIAC_CONSTELLATIONS, ...SIGNPOSTS]);
 
 /** Twelve 30° houses of the ecliptic, starting at the March equinox (traditional Chinese names). */
-export const ZODIAC_SIGNS = ['白羊宫', '金牛宫', '双子宫', '巨蟹宫', '狮子宫', '室女宫', '天秤宫', '天蝎宫', '人马宫', '摩羯宫', '宝瓶宫', '双鱼宫'];
+export const ZODIAC_SIGNS = isEn
+  ? ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
+  : ['白羊宫', '金牛宫', '双子宫', '巨蟹宫', '狮子宫', '室女宫', '天秤宫', '天蝎宫', '人马宫', '摩羯宫', '宝瓶宫', '双鱼宫'];
 
 /** The 24 solar terms; term k begins when the Sun's ecliptic longitude reaches 15k°. */
-export const SOLAR_TERMS = [
-  '春分', '清明', '谷雨', '立夏', '小满', '芒种', '夏至', '小暑', '大暑', '立秋', '处暑', '白露',
-  '秋分', '寒露', '霜降', '立冬', '小雪', '大雪', '冬至', '小寒', '大寒', '立春', '雨水', '惊蛰'
-];
+export const SOLAR_TERMS = isEn
+  ? [
+      'Spring Equinox', 'Clear and Bright', 'Grain Rain', 'Start of Summer', 'Grain Buds', 'Grain in Ear',
+      'Summer Solstice', 'Minor Heat', 'Major Heat', 'Start of Autumn', 'End of Heat', 'White Dew',
+      'Autumn Equinox', 'Cold Dew', 'Frost Descent', 'Start of Winter', 'Minor Snow', 'Major Snow',
+      'Winter Solstice', 'Minor Cold', 'Major Cold', 'Start of Spring', 'Rain Water', 'Awakening of Insects'
+    ]
+  : [
+      '春分', '清明', '谷雨', '立夏', '小满', '芒种', '夏至', '小暑', '大暑', '立秋', '处暑', '白露',
+      '秋分', '寒露', '霜降', '立冬', '小雪', '大雪', '冬至', '小寒', '大寒', '立春', '雨水', '惊蛰'
+    ];
 
 export function eclipticRaDec(lambdaDeg: number, betaDeg = 0): { ra: number; dec: number } {
   const l = (lambdaDeg * Math.PI) / 180;
@@ -56,7 +66,22 @@ export function sunOnEcliptic(date: Date): SunOnEcliptic {
 }
 
 /** The four symbols (四象), seven mansions each, in order from 角. */
-export const XIANG = ['东方苍龙', '北方玄武', '西方白虎', '南方朱雀'];
+export const XIANG = isEn
+  ? ['Azure Dragon of the East', 'Black Tortoise of the North', 'White Tiger of the West', 'Vermilion Bird of the South']
+  : ['东方苍龙', '北方玄武', '西方白虎', '南方朱雀'];
+
+/** English names of the mansions. */
+const MANSION_EN: Record<string, string> = {
+  角: 'Horn', 亢: 'Neck', 氐: 'Root', 房: 'Room', 心: 'Heart', 尾: 'Tail', 箕: 'Winnowing Basket',
+  斗: 'Dipper', 牛: 'Ox', 女: 'Girl', 虚: 'Emptiness', 危: 'Rooftop', 室: 'Encampment', 壁: 'Wall',
+  奎: 'Legs', 娄: 'Bond', 胃: 'Stomach', 昴: 'Hairy Head', 毕: 'Net', 觜: 'Turtle Beak', 参: 'Three Stars',
+  井: 'Well', 鬼: 'Ghost', 柳: 'Willow', 星: 'Star', 张: 'Extended Net', 翼: 'Wings', 轸: 'Chariot'
+};
+
+/** Mansion name in the current language, e.g. 角宿 / Horn. */
+export function mansionName(mansion: { id: string }): string {
+  return isEn ? MANSION_EN[mansion.id] ?? mansion.id : `${mansion.id}宿`;
+}
 
 export interface Mansion {
   id: string;

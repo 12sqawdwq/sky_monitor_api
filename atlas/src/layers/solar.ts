@@ -16,6 +16,7 @@ import { AU_LY, gaussian, logWindow, mulberry32 } from '../core/units';
 import type { AtlasObject } from '../data/objects';
 import { ParticleBuilder } from './particles';
 import type { FrameState, Layer } from './types';
+import { t } from '../core/i18n';
 
 const DEG = Math.PI / 180;
 
@@ -37,32 +38,32 @@ interface PlanetElements {
 // Mean J2000 elements (JPL approximate positions of the major planets).
 const PLANETS: PlanetElements[] = [
   { id: 'mercury', zh: '水星', en: 'Mercury', a: 0.38710, e: 0.20563, i: 7.005, L: 252.25084, varpi: 77.45645, node: 48.33167, period: 87.969,
-    desc: '离太阳最近、最小的行星，没有大气保温，昼夜温差超过 600 摄氏度。', facts: [['公转周期', '88 天']] },
+    desc: t('离太阳最近、最小的行星，没有大气保温，昼夜温差超过 600 摄氏度。', 'The smallest planet and the closest to the Sun. With no atmosphere to hold heat, its day–night swing exceeds 600 °C.'), facts: [[t('公转周期', 'Orbital period'), t('88 天', '88 days')]] },
   { id: 'venus', zh: '金星', en: 'Venus', a: 0.72333, e: 0.00677, i: 3.39471, L: 181.97973, varpi: 131.53298, node: 76.68069, period: 224.701,
-    desc: '夜空中仅次于月亮的亮天体，古称“太白”。浓厚的二氧化碳大气使它成为太阳系最热的行星。', facts: [['公转周期', '225 天'], ['表面温度', '约 465 °C']] },
+    desc: t('夜空中仅次于月亮的亮天体，古称“太白”。浓厚的二氧化碳大气使它成为太阳系最热的行星。', 'The brightest object in the night sky after the Moon, called “Taibai” in ancient China. Its thick CO₂ atmosphere makes it the hottest planet.'), facts: [[t('公转周期', 'Orbital period'), t('225 天', '225 days')], [t('表面温度', 'Surface temperature'), t('约 465 °C', 'about 465 °C')]] },
   { id: 'earth', zh: '地球', en: 'Earth', a: 1.00000, e: 0.01671, i: 0.00005, L: 100.46435, varpi: 102.94719, node: -11.26064, period: 365.256,
-    desc: '你所在的地方。从这张图的任何尺度回望，都只能看到这一个点。', facts: [['日地距离', '1 天文单位 ≈ 8.3 光分']] },
+    desc: t('你所在的地方。从这张图的任何尺度回望，都只能看到这一个点。', 'Where you are. Look back from any scale on this map and it is just this one point.'), facts: [[t('日地距离', 'Sun–Earth distance'), t('1 天文单位 ≈ 8.3 光分', '1 AU ≈ 8.3 light-minutes')]] },
   { id: 'mars', zh: '火星', en: 'Mars', a: 1.52368, e: 0.09340, i: 1.85061, L: 355.45332, varpi: 336.04084, node: 49.57854, period: 686.98,
-    desc: '古称“荧惑”。表面的氧化铁让它呈现橙红色，奥林帕斯山是太阳系最高的火山。', facts: [['公转周期', '687 天']] },
+    desc: t('古称“荧惑”。表面的氧化铁让它呈现橙红色，奥林帕斯山是太阳系最高的火山。', 'Called “Yinghuo” in ancient China. Iron oxide colours it orange-red; Olympus Mons is the tallest volcano in the Solar System.'), facts: [[t('公转周期', 'Orbital period'), t('687 天', '687 days')]] },
   { id: 'jupiter', zh: '木星', en: 'Jupiter', a: 5.20260, e: 0.04849, i: 1.30530, L: 34.40438, varpi: 14.75385, node: 100.55615, period: 4332.59,
-    desc: '太阳系最大的行星，质量是其余行星总和的 2.5 倍。双筒望远镜就能看到它的四颗伽利略卫星。', facts: [['公转周期', '11.9 年'], ['已知卫星', '90+']] },
+    desc: t('太阳系最大的行星，质量是其余行星总和的 2.5 倍。双筒望远镜就能看到它的四颗伽利略卫星。', 'The largest planet, 2.5 times the mass of all the others combined. Binoculars show its four Galilean moons.'), facts: [[t('公转周期', 'Orbital period'), t('11.9 年', '11.9 years')], [t('已知卫星', 'Known moons'), '90+']] },
   { id: 'saturn', zh: '土星', en: 'Saturn', a: 9.55491, e: 0.05551, i: 2.48446, L: 49.94432, varpi: 92.43194, node: 113.71504, period: 10759.22,
-    desc: '拥有最壮观光环的气态巨行星，环宽约 28 万千米，厚度大多只有十几米。', facts: [['公转周期', '29.5 年']] },
+    desc: t('拥有最壮观光环的气态巨行星，环宽约 28 万千米，厚度大多只有十几米。', 'The gas giant with the grandest rings: about 280,000 km wide yet mostly only tens of metres thick.'), facts: [[t('公转周期', 'Orbital period'), t('29.5 年', '29.5 years')]] },
   { id: 'uranus', zh: '天王星', en: 'Uranus', a: 19.21845, e: 0.04630, i: 0.76986, L: 313.23218, varpi: 170.96424, node: 74.22988, period: 30685.4,
-    desc: '1781 年发现的第一颗“望远镜行星”，自转轴几乎躺倒在轨道面上。', facts: [['公转周期', '84 年']] },
+    desc: t('1781 年发现的第一颗“望远镜行星”，自转轴几乎躺倒在轨道面上。', 'The first planet found by telescope (1781); its axis lies almost in its orbital plane.'), facts: [[t('公转周期', 'Orbital period'), t('84 年', '84 years')]] },
   { id: 'neptune', zh: '海王星', en: 'Neptune', a: 30.11039, e: 0.00899, i: 1.76917, L: 304.88003, varpi: 44.97135, node: 131.72169, period: 60189,
-    desc: '先由数学计算预言、后被望远镜找到的行星（1846 年）。风速可达每秒 2000 千米。', facts: [['公转周期', '165 年']] },
+    desc: t('先由数学计算预言、后被望远镜找到的行星（1846 年）。风速可达每秒 2000 千米。', 'Predicted by mathematics before it was seen through a telescope (1846). Its winds reach 2,000 km/h.'), facts: [[t('公转周期', 'Orbital period'), t('165 年', '165 years')]] },
   { id: 'pluto', zh: '冥王星', en: 'Pluto', a: 39.48, e: 0.2488, i: 17.14, L: 238.93, varpi: 224.07, node: 110.30, period: 90560,
-    desc: '柯伊伯带中最著名的矮行星。2015 年新视野号飞掠，看到了一颗心形的冰原。', facts: [['公转周期', '248 年'], ['分类', '矮行星']] }
+    desc: t('柯伊伯带中最著名的矮行星。2015 年新视野号飞掠，看到了一颗心形的冰原。', 'The best-known dwarf planet of the Kuiper belt. New Horizons flew past in 2015 and found a heart-shaped ice plain.'), facts: [[t('公转周期', 'Orbital period'), t('248 年', '248 years')], [t('分类', 'Class'), t('矮行星', 'dwarf planet')]] }
 ];
 
 const PROBES: Array<{ id: string; zh: string; en: string; ra: number; dec: number; au: number; desc: string; facts: Array<[string, string]> }> = [
   { id: 'voyager1', zh: '旅行者 1 号', en: 'Voyager 1', ra: 257.6, dec: 12.1, au: 169,
-    desc: '1977 年发射，2012 年越过日球层顶，是离地球最远的人造物体，仍在以每秒约 17 千米的速度飞离太阳。', facts: [['发射', '1977 年 9 月'], ['速度', '约 17 km/s']] },
+    desc: t('1977 年发射，2012 年越过日球层顶，是离地球最远的人造物体，仍在以每秒约 17 千米的速度飞离太阳。', 'Launched in 1977, it crossed the heliopause in 2012. The most distant human-made object, still leaving the Sun at about 17 km/s.'), facts: [[t('发射', 'Launch'), t('1977 年 9 月', 'September 1977')], [t('速度', 'Speed'), t('约 17 km/s', 'about 17 km/s')]] },
   { id: 'voyager2', zh: '旅行者 2 号', en: 'Voyager 2', ra: 300.4, dec: -59.6, au: 142,
-    desc: '唯一造访过天王星和海王星的探测器，2018 年进入星际空间。', facts: [['发射', '1977 年 8 月']] },
+    desc: t('唯一造访过天王星和海王星的探测器，2018 年进入星际空间。', 'The only spacecraft to visit Uranus and Neptune; it entered interstellar space in 2018.'), facts: [[t('发射', 'Launch'), t('1977 年 8 月', 'August 1977')]] },
   { id: 'newhorizons', zh: '新视野号', en: 'New Horizons', ra: 290.0, dec: -20.4, au: 62,
-    desc: '2015 年飞掠冥王星、2019 年飞掠柯伊伯带天体“天涯海角”，正在柯伊伯带中继续远行。', facts: [['发射', '2006 年 1 月']] }
+    desc: t('2015 年飞掠冥王星、2019 年飞掠柯伊伯带天体“天涯海角”，正在柯伊伯带中继续远行。', 'Flew past Pluto in 2015 and the Kuiper-belt object Arrokoth in 2019, and is still travelling through the Kuiper belt.'), facts: [[t('发射', 'Launch'), t('2006 年 1 月', 'January 2006')]] }
 ];
 
 function solveKepler(M: number, e: number): number {
@@ -156,7 +157,7 @@ export class SolarLayer implements Layer {
         ra: radec?.ra,
         dec: radec?.dec,
         desc: planet.desc,
-        facts: [['轨道半长轴', `${planet.a.toFixed(2)} 天文单位`], ...planet.facts],
+        facts: [[t('轨道半长轴', 'Semi-major axis'), `${planet.a.toFixed(2)} ${t('天文单位', 'AU')}`], ...planet.facts],
         label: [-6, -1.9],
         priority: planet.id === 'earth' ? 3.5 : 2.6 - planet.a * 0.01
       });
@@ -173,7 +174,7 @@ export class SolarLayer implements Layer {
         pos,
         extent: 4 * AU_LY,
         desc: probe.desc,
-        facts: [['距太阳', `约 ${probe.au} 天文单位`], ...probe.facts],
+        facts: [[t('距太阳', 'From the Sun'), t(`约 ${probe.au} 天文单位`, `about ${probe.au} AU`)], ...probe.facts],
         label: [-3.9, -1.6],
         priority: 1.6
       });
@@ -183,13 +184,15 @@ export class SolarLayer implements Layer {
       id: 'sun',
       zh: '太阳',
       en: 'The Sun · Sol',
+      nameEn: 'Sun',
+      subEn: '太阳 · Sol',
       kind: 'sun',
       pos: [0, 0, 0],
       extent: 16 * AU_LY,
       absmag: 4.83,
       spect: 'G2V',
-      desc: '一颗普通的 G2 型主序星，已经稳定燃烧约 46 亿年，还将持续约 50 亿年。太阳系 99.86% 的质量都集中在它身上。在这张图上，它就是“你在这里”。',
-      facts: [['年龄', '约 46 亿年'], ['表面温度', '5772 K'], ['距银心', '约 2.67 万光年']],
+      desc: t('一颗普通的 G2 型主序星，已经稳定燃烧约 46 亿年，还将持续约 50 亿年。太阳系 99.86% 的质量都集中在它身上。在这张图上，它就是“你在这里”。', 'An ordinary G2 main-sequence star that has burned steadily for about 4.6 billion years and will continue for about 5 billion more. It holds 99.86% of the Solar System’s mass. On this map, it is “you are here”.'),
+      facts: [[t('年龄', 'Age'), t('约 46 亿年', 'about 4.6 billion years')], [t('表面温度', 'Surface temperature'), '5772 K'], [t('距银心', 'From galactic centre'), t('约 2.67 万光年', 'about 26,700 ly')]],
       label: [-6, 4.2],
       priority: 6,
       distance: 0

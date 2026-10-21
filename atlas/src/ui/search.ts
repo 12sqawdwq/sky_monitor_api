@@ -1,5 +1,6 @@
 import { formatDistance } from '../core/units';
 import { KIND_LABEL, objectDistance, type AtlasObject } from '../data/objects';
+import { nameOf, t } from '../core/i18n';
 
 function norm(value: string): string {
   return value.toLowerCase().replace(/[\s·.\-_'’()（）]/g, '');
@@ -38,7 +39,7 @@ export class SearchBox {
     }
     const scored: Array<{ object: AtlasObject; score: number }> = [];
     for (const object of this.objects()) {
-      const names = [object.zh, object.en ?? '', object.id, object.des ?? ''].map(norm);
+      const names = [object.zh, object.en ?? '', object.nameEn ?? '', object.id, object.des ?? ''].map(norm);
       let score = -1;
       for (const name of names) {
         if (!name) continue;
@@ -60,7 +61,7 @@ export class SearchBox {
     if (!this.matches.length && norm(this.input.value)) {
       const empty = document.createElement('div');
       empty.className = 'search__empty';
-      empty.textContent = '图谱里没有找到它';
+      empty.textContent = t('图谱里没有找到它', 'Not in the atlas');
       this.results.appendChild(empty);
       return;
     }
@@ -70,10 +71,10 @@ export class SearchBox {
       row.className = `search__row${index === this.active ? ' is-active' : ''}`;
       const name = document.createElement('span');
       name.className = 'search__name';
-      name.textContent = object.zh;
+      name.textContent = nameOf(object);
       const meta = document.createElement('span');
       meta.className = 'search__meta';
-      meta.textContent = `${KIND_LABEL[object.kind]} · ${object.kind === 'sun' ? '原点' : formatDistance(objectDistance(object))}`;
+      meta.textContent = `${KIND_LABEL[object.kind]} · ${object.kind === 'sun' ? t('原点', 'origin') : formatDistance(objectDistance(object))}`;
       row.append(name, meta);
       row.addEventListener('click', () => this.choose(object));
       this.results.appendChild(row);

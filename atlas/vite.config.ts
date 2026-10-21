@@ -11,6 +11,11 @@ export default defineConfig(({ command }) => ({
         target: process.env.SKY_API_TARGET || 'https://sky.eunoia.top',
         changeOrigin: true,
         rewrite: path => path.replace(/^\/sky-api/, '')
+      },
+      // Backend pages linked from the Services menu.
+      '^/(wiki|docs|redoc|health|openapi\\.json)': {
+        target: process.env.SKY_API_TARGET || 'https://sky.eunoia.top',
+        changeOrigin: true
       }
     }
   }

@@ -2,10 +2,13 @@ import { Vector3 } from 'three';
 import type { Vec3 } from '../core/coords';
 import type { AtlasObject } from '../data/objects';
 import type { Annotation, FrameState } from '../layers/types';
+import { nameOf, subtitleOf } from '../core/i18n';
 
 export interface LabelItem {
   key: string;
+  /** Primary text, in the current language. */
   zh: string;
+  /** Secondary line: the other language. */
   en?: string;
   pos: Vec3;
   window: [number, number];
@@ -25,11 +28,11 @@ const MAX_LABELS = 38;
 const STAR_LABEL_LIMIT_MAG = 3.4;
 
 export function itemFromObject(object: AtlasObject): LabelItem {
-  return { key: object.id, zh: object.zh, en: object.en, pos: object.pos, window: object.label, priority: object.priority, style: object.kind, object };
+  return { key: object.id, zh: nameOf(object), en: subtitleOf(object), pos: object.pos, window: object.label, priority: object.priority, style: object.kind, object };
 }
 
 export function itemFromAnnotation(annotation: Annotation): LabelItem {
-  return { ...annotation, style: annotation.style };
+  return { ...annotation, zh: nameOf(annotation), en: subtitleOf(annotation), style: annotation.style };
 }
 
 function apparentMagnitude(object: AtlasObject, camera: Vec3): number {

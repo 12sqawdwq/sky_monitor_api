@@ -26,6 +26,8 @@ export interface Annotation {
   key: string;
   zh: string;
   en?: string;
+  nameEn?: string;
+  subEn?: string;
   pos: Vec3;
   window: [number, number];
   priority: number;

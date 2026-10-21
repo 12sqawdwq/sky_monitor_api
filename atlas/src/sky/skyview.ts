@@ -1,8 +1,8 @@
 import { Euler, Matrix4, Quaternion, Vector3, type WebGLRenderer } from 'three';
-import { sceneToRaDec, type Observer } from '../core/coords';
+import { azimuthName, sceneToRaDec, type Observer } from '../core/coords';
 import { formatDistance } from '../core/units';
 import { constellationName } from '../data/constellations';
-import { DEFAULT_OBSERVER, locate, saveObserver } from '../data/observer';
+import { DEFAULT_OBSERVER, locate, observerLabel, saveObserver } from '../data/observer';
 import { KIND_LABEL, objectDistance, type AtlasObject } from '../data/objects';
 import { fetchSkyChart, type SkyChartObject } from '../data/sky-api';
 import type { StarCatalog } from '../data/stars';
@@ -26,6 +26,7 @@ import {
   eclipticRaDec,
   ESSENTIAL_CONSTELLATIONS,
   mansionAt,
+  mansionName,
   mansionWidth,
   SOLAR_TERMS,
   sunOnEcliptic,
@@ -34,6 +35,7 @@ import {
   ZODIAC_SIGNS,
   type Mansion
 } from '../data/zodiac';
+import { isEn, nameOf, setLang, subtitleOf, t } from '../core/i18n';
 
 const DEG = Math.PI / 180;
 const MIN_FOV = 12;
@@ -68,8 +70,7 @@ interface SkyItem {
 
 const PLANET_MAG: Record<string, number> = { mercury: 0, venus: -4.2, mars: 0.9, jupiter: -2.3, saturn: 0.8, uranus: 5.7, neptune: 7.8 };
 const NAKED_EYE_GALAXIES = new Set(['M31', 'M33', 'LMC', 'SMC', 'Sgr A*']);
-const CARDINALS: Array<[string, number]> = [['北', 0], ['东北', 45], ['东', 90], ['东南', 135], ['南', 180], ['西南', 225], ['西', 270], ['西北', 315]];
-const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
+const CARDINALS: Array<[string, number]> = [0, 45, 90, 135, 180, 225, 270, 315].map(az => [azimuthName(az), az]);
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, text?: string): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag);
@@ -86,8 +87,33 @@ function dayLabel(date: Date, reference: Date): string {
   const a = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   const b = new Date(reference.getFullYear(), reference.getMonth(), reference.getDate()).getTime();
   const diff = Math.round((a - b) / 86400000);
-  const prefix = diff === 0 ? '' : diff === 1 ? '明天 ' : diff === -1 ? '昨天 ' : `${date.getMonth() + 1}/${date.getDate()} `;
+  const prefix = diff === 0 ? '' : diff === 1 ? t('明天 ', 'tmrw ') : diff === -1 ? t('昨天 ', 'yday ') : `${date.getMonth() + 1}/${date.getDate()} `;
   return `${prefix}${clock(date)}`;
+}
+
+function dateLabel(date: Date): string {
+  return isEn
+    ? date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    : `${date.getMonth() + 1}月${date.getDate()}日 周${'日一二三四五六'[date.getDay()]}`;
+}
+
+function shortDate(date: Date): string {
+  return isEn ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : `${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+function lineLabel(mode: LineMode): string {
+  return isEn
+    ? `Figures: ${{ essential: 'main', all: 'all', off: 'off' }[mode]}`
+    : `星座：${{ essential: '主要', all: '全部', off: '关' }[mode]}`;
+}
+
+/** Naked-eye magnitude class: "1 等星" / "1st magnitude". */
+function magnitudeClass(mag: number): string {
+  const n = mag < -0.5 ? -1 : Math.max(0, Math.round(mag));
+  if (!isEn) return `${n < 0 ? '−1' : n} 等星`;
+  if (n < 0) return '−1 magnitude';
+  const suffix = n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th';
+  return `${n}${suffix} magnitude`;
 }
 
 function offsetLabel(minutes: number): string {
@@ -97,7 +123,7 @@ function offsetLabel(minutes: number): string {
   const d = Math.floor(abs / 1440);
   const h = Math.floor((abs % 1440) / 60);
   const m = abs % 60;
-  return `${sign}${d ? `${d}天` : ''}${h ? `${h}小时` : ''}${m && !d ? `${m}分` : ''}`;
+  return `${sign}${d ? `${d}${t('天', 'd ')}` : ''}${h ? `${h}${t('小时', 'h ')}` : ''}${m && !d ? `${m}${t('分', 'm')}` : ''}`.trim();
 }
 
 function moonSvg(illumination: number, size: number): string {
@@ -184,39 +210,40 @@ export class SkyView {
 
   constructor(private renderer: WebGLRenderer, private options: SkyViewOptions) {
     this.root = el('section', 'sky');
-    this.root.setAttribute('aria-label', '今晚星空');
+    this.root.setAttribute('aria-label', t('今晚星空', "Tonight's sky"));
     this.root.innerHTML = `
       <div class="sky__labels"></div>
       <div class="sky__target" aria-hidden="true"><i></i></div>
       <header class="sky__top">
         <div class="sky__where">
-          <div class="sky__title">今晚星空</div>
+          <div class="sky__title">${t('今晚星空', "Tonight's Sky")}</div>
           <button type="button" class="sky__loc" data-sky="where"></button>
         </div>
         <div class="sky__time">
-          <button type="button" class="sky__step" data-step="-60" aria-label="早一小时">−1h</button>
+          <button type="button" class="sky__step" data-step="-60" aria-label="${t('早一小时', 'One hour earlier')}">−1h</button>
           <div class="sky__clock"><span class="sky__date"></span><span class="sky__hm"></span><span class="sky__offset"></span></div>
-          <button type="button" class="sky__step" data-step="60" aria-label="晚一小时">+1h</button>
-          <button type="button" class="sky__step sky__play" data-sky="play" aria-label="时间流动">▶</button>
-          <button type="button" class="chip" data-sky="now">现在</button>
+          <button type="button" class="sky__step" data-step="60" aria-label="${t('晚一小时', 'One hour later')}">+1h</button>
+          <button type="button" class="sky__step sky__play" data-sky="play" aria-label="${t('时间流动', 'Run time')}">▶</button>
+          <button type="button" class="chip" data-sky="now">${t('现在', 'Now')}</button>
         </div>
         <div class="sky__tools">
-          <button type="button" class="chip is-on" data-sky="lines">星座：主要</button>
-          <button type="button" class="chip is-on" data-sky="ecliptic">黄道</button>
-          <button type="button" class="chip" data-sky="mansions">二十八宿</button>
-          <button type="button" class="chip" data-sky="grid">地平网格</button>
-          <button type="button" class="chip" data-sky="gyro" hidden>陀螺仪</button>
-          <button type="button" class="icon-btn" data-sky="close" aria-label="返回宇宙图谱">×</button>
+          <button type="button" class="chip is-on" data-sky="lines">${lineLabel('essential')}</button>
+          <button type="button" class="chip is-on" data-sky="ecliptic">${t('黄道', 'Ecliptic')}</button>
+          <button type="button" class="chip" data-sky="mansions">${t('二十八宿', '28 Mansions')}</button>
+          <button type="button" class="chip" data-sky="grid">${t('地平网格', 'Alt-az grid')}</button>
+          <button type="button" class="chip" data-sky="gyro" hidden>${t('陀螺仪', 'Gyro')}</button>
+          <button type="button" class="chip lang-toggle" data-sky="lang" aria-label="${t('Switch to English', '切换到中文')}">${t('EN', '中文')}</button>
+          <button type="button" class="icon-btn" data-sky="close" aria-label="${t('返回宇宙图谱', 'Back to the atlas')}">×</button>
         </div>
       </header>
-      <input class="sky__scrub" type="range" min="-720" max="720" step="5" value="0" aria-label="时间轴（前后 12 小时）" />
+      <input class="sky__scrub" type="range" min="-720" max="720" step="5" value="0" aria-label="${t('时间轴（前后 12 小时）', 'Timeline (±12 hours)')}" />
       <div class="sky__locmenu" hidden>
-        <button type="button" class="chip" data-sky="locate">使用我的位置</button>
-        <button type="button" class="chip" data-sky="shanghai">上海</button>
+        <button type="button" class="chip" data-sky="locate">${t('使用我的位置', 'Use my location')}</button>
+        <button type="button" class="chip" data-sky="shanghai">${t('上海', 'Shanghai')}</button>
       </div>
       <aside class="sky__card" aria-live="polite"></aside>
       <div class="sky__picks">
-        <div class="sky__picks-head"><span>今晚推荐</span><span class="sky__picks-status"></span></div>
+        <div class="sky__picks-head"><span>${t('今晚推荐', 'Tonight’s picks')}</span><span class="sky__picks-status"></span></div>
         <div class="sky__picks-list"></div>
       </div>`;
     options.host.appendChild(this.root);
@@ -255,7 +282,7 @@ export class SkyView {
       const order: LineMode[] = ['essential', 'all', 'off'];
       this.lineMode = order[(order.indexOf(this.lineMode) + 1) % order.length];
       const button = event.currentTarget as HTMLElement;
-      button.textContent = `星座：${{ essential: '主要', all: '全部', off: '关' }[this.lineMode]}`;
+      button.textContent = lineLabel(this.lineMode);
       button.classList.toggle('is-on', this.lineMode !== 'off');
       this.sky.lines = this.lineMode;
     });
@@ -271,6 +298,7 @@ export class SkyView {
       this.sky.showGrid = (event.currentTarget as HTMLElement).classList.toggle('is-on');
     });
     q('[data-sky="close"]').addEventListener('click', () => this.close());
+    q('[data-sky="lang"]').addEventListener('click', () => setLang(isEn ? 'zh' : 'en'));
     this.whereText.addEventListener('click', () => {
       const menu = q('.sky__locmenu');
       menu.hidden = !menu.hidden;
@@ -383,8 +411,8 @@ export class SkyView {
   // ----------------------------------------------------------------- data
 
   private buildBodies(): void {
-    const sun: SkyItem = this.makeItem({ key: 'sun', zh: '太阳', en: 'Sun', kind: 'sun', positionAt: sunPosition, mag: -26.7 });
-    const moon: SkyItem = this.makeItem({ key: 'moon', zh: '月亮', en: 'Moon', kind: 'moon', positionAt: moonPosition, mag: -12 });
+    const sun: SkyItem = this.makeItem({ key: 'sun', zh: t('太阳', 'Sun'), en: t('Sun', '太阳'), kind: 'sun', positionAt: sunPosition, mag: -26.7 });
+    const moon: SkyItem = this.makeItem({ key: 'moon', zh: t('月亮', 'Moon'), en: t('Moon', '月亮'), kind: 'moon', positionAt: moonPosition, mag: -12 });
     this.bodies.set('sun', sun);
     this.bodies.set('moon', moon);
     for (const planet of geocentricPlanets(new Date())) {
@@ -392,8 +420,8 @@ export class SkyView {
       const id = planet.id;
       this.bodies.set(id, this.makeItem({
         key: id,
-        zh: planet.zh,
-        en: planet.en,
+        zh: nameOf(planet),
+        en: subtitleOf(planet),
         kind: 'planet',
         positionAt: date => geocentricPlanets(date).find(p => p.id === id)!,
         mag: PLANET_MAG[id]
@@ -422,13 +450,13 @@ export class SkyView {
 
     for (const object of objects) {
       if (object.kind === 'star' && object.ra !== undefined && object.dec !== undefined && object.mag !== undefined && object.mag <= 4.6 && !object.zh.startsWith('HIP')) {
-        items.push(this.makeItem({ key: object.id, zh: object.zh, en: object.en, kind: 'star', radec: { ra: object.ra, dec: object.dec }, mag: object.mag, object }));
+        items.push(this.makeItem({ key: object.id, zh: nameOf(object), en: subtitleOf(object), kind: 'star', radec: { ra: object.ra, dec: object.dec }, mag: object.mag, object }));
       } else if (['nebula', 'cluster', 'globular', 'galaxy', 'core'].includes(object.kind)) {
         const naked = NAKED_EYE_GALAXIES.has(object.id);
         if (!naked && (object.mag === undefined || object.mag > 7)) continue;
         if (object.id === 'Milky Way') continue;
         const radec = object.ra !== undefined && object.dec !== undefined ? { ra: object.ra, dec: object.dec } : sceneToRaDec(object.pos);
-        items.push(this.makeItem({ key: object.id, zh: object.zh, en: object.en, kind: 'deep', radec, mag: object.mag ?? 4, object }));
+        items.push(this.makeItem({ key: object.id, zh: nameOf(object), en: subtitleOf(object), kind: 'deep', radec, mag: object.mag ?? 4, object }));
       }
     }
     for (const c of this.constellations) {
@@ -448,7 +476,7 @@ export class SkyView {
       const start = eclipticLongitudeAtRa(mansion.det[0]);
       const end = eclipticLongitudeAtRa(mansion.det[0] + mansionWidth(this.mansions, k));
       const mid = start + ((end - start + 360) % 360) / 2;
-      items.push(this.eclipticItem({ key: `mansion:${k}`, zh: `${mansion.id}宿`, en: '', kind: 'mansion', rank: k }, mid, 5.6));
+      items.push(this.eclipticItem({ key: `mansion:${k}`, zh: mansionName(mansion), en: '', kind: 'mansion', rank: k }, mid, 5.6));
     });
     if (this.mansions.length === 28) {
       XIANG.forEach((zh, x) => {
@@ -657,7 +685,7 @@ export class SkyView {
   }
 
   private updateClock(date: Date): void {
-    this.clockDate.textContent = `${date.getMonth() + 1}月${date.getDate()}日 周${WEEKDAYS[date.getDay()]}`;
+    this.clockDate.textContent = dateLabel(date);
     this.clockTime.textContent = clock(date);
     this.clockOffset.textContent = offsetLabel(this.offsetMin);
   }
@@ -845,12 +873,14 @@ export class SkyView {
     card.replaceChildren();
     const close = el('button', 'icon-btn sky__card-close', '×');
     close.type = 'button';
-    close.setAttribute('aria-label', '关闭');
+    close.setAttribute('aria-label', t('关闭', 'Close'));
     close.addEventListener('click', () => this.deselect());
 
-    const kind = item.kind === 'moon' ? '卫星 · 月球' : item.kind === 'deep' && item.object ? KIND_LABEL[item.object.kind] : item.kind === 'sun' ? '恒星 · 太阳' : item.kind === 'planet' ? '行星' : '恒星';
+    const kind = item.kind === 'moon'
+      ? t('卫星 · 月球', 'Satellite · the Moon')
+      : item.kind === 'deep' && item.object ? KIND_LABEL[item.object.kind] : item.kind === 'sun' ? KIND_LABEL.sun : item.kind === 'planet' ? KIND_LABEL.planet : KIND_LABEL.star;
     const head = el('div', 'sky__card-head');
-    head.append(el('div', 'sky__card-kind', kind), el('h3', 'sky__card-title', item.zh), el('div', 'sky__card-en', item.object?.en || item.en));
+    head.append(el('div', 'sky__card-kind', kind), el('h3', 'sky__card-title', item.zh), el('div', 'sky__card-en', item.en));
 
     const stats = el('div', 'sky__card-stats');
     const stat = (k: string, v: string) => {
@@ -858,31 +888,30 @@ export class SkyView {
       cell.append(el('span', 'sky__stat-k', k), el('span', 'sky__stat-v', v));
       stats.appendChild(cell);
     };
-    const dirName = ['北', '东北', '东', '东南', '南', '西南', '西', '西北'][Math.round(h.az / 45) % 8];
-    stat('高度', `${h.alt.toFixed(1)}°`);
-    stat('方位', `${h.az.toFixed(0)}° ${dirName}`);
+    stat(t('高度', 'Altitude'), `${h.alt.toFixed(1)}°`);
+    stat(t('方位', 'Azimuth'), `${h.az.toFixed(0)}° ${azimuthName(h.az)}`);
     if (item.kind === 'moon') {
       const moon = moonPosition(date);
-      stat('月相', `${this.phase.name} ${Math.round(this.phase.illumination * 100)}%`);
-      stat('距离', `${Math.round(moon.distanceKm).toLocaleString('en-US')} 千米`);
+      stat(t('月相', 'Phase'), `${this.phase.name} ${Math.round(this.phase.illumination * 100)}%`);
+      stat(t('距离', 'Distance'), `${Math.round(moon.distanceKm).toLocaleString('en-US')} ${t('千米', 'km')}`);
       const lodge = mansionAt(this.mansions, moon.ra);
-      if (lodge) stat('月宿', `${lodge.mansion.id}宿 · ${XIANG[lodge.mansion.xiang]}`);
+      if (lodge) stat(t('月宿', 'Lunar mansion'), `${mansionName(lodge.mansion)} · ${XIANG[lodge.mansion.xiang]}`);
     } else if (item.kind === 'planet') {
       const planet = geocentricPlanets(date).find(p => p.id === item.key);
-      if (planet) stat('距地球', `${planet.distance.toFixed(2)} 天文单位`);
-      if (item.mag !== undefined) stat('亮度', `约 ${item.mag.toFixed(1)} 等`);
+      if (planet) stat(t('距地球', 'From Earth'), `${planet.distance.toFixed(2)} ${t('天文单位', 'AU')}`);
+      if (item.mag !== undefined) stat(t('亮度', 'Magnitude'), t(`约 ${item.mag.toFixed(1)} 等`, `about ${item.mag.toFixed(1)}`));
     } else if (item.kind === 'sun') {
       const sun = sunOnEcliptic(date);
-      stat('黄道位置', `${sun.sign} · 黄经 ${sun.lambda.toFixed(1)}°`);
-      stat('节气', `${sun.term} → ${sun.nextTerm} ${sun.nextTermDate.getMonth() + 1}月${sun.nextTermDate.getDate()}日`);
+      stat(t('黄道位置', 'On the ecliptic'), `${sun.sign} · ${t('黄经', 'λ')} ${sun.lambda.toFixed(1)}°`);
+      stat(t('节气', 'Solar term'), `${sun.term} → ${sun.nextTerm} ${shortDate(sun.nextTermDate)}`);
       const lodge = mansionAt(this.mansions, sunPosition(date).ra);
-      if (lodge) stat('日躔', `${lodge.mansion.id}宿 ${lodge.offset.toFixed(0)}° / ${mansionWidth(this.mansions, lodge.index).toFixed(0)}°`);
+      if (lodge) stat(t('日躔', 'Solar mansion'), `${mansionName(lodge.mansion)} ${lodge.offset.toFixed(0)}° / ${mansionWidth(this.mansions, lodge.index).toFixed(0)}°`);
     } else if (item.object) {
       if (item.mag !== undefined) {
-        const grade = item.kind === 'star' ? ` · ${item.mag < -0.5 ? '−1' : Math.max(0, Math.round(item.mag))} 等星` : '';
-        stat('星等', `${item.mag.toFixed(2)}${grade}`);
+        const grade = item.kind === 'star' ? ` · ${magnitudeClass(item.mag)}` : '';
+        stat(t('星等', 'Magnitude'), `${item.mag.toFixed(2)}${grade}`);
       }
-      stat('距离', formatDistance(objectDistance(item.object)));
+      stat(t('距离', 'Distance'), formatDistance(objectDistance(item.object)));
     }
 
     const timeline = el('div', 'sky__card-times');
@@ -892,28 +921,30 @@ export class SkyView {
       timeline.appendChild(cell);
     };
     if (events.neverRises) {
-      timeline.appendChild(el('p', 'sky__card-note', '在你的纬度，它永远不会升到地平线以上。'));
+      timeline.appendChild(el('p', 'sky__card-note', t('在你的纬度，它永远不会升到地平线以上。', 'At your latitude it never rises above the horizon.')));
     } else if (events.circumpolar) {
-      time('升起', null, '拱极');
-      time('中天', events.transit, '—');
-      time('落下', null, '不落');
+      time(t('升起', 'Rise'), null, t('拱极', 'circumpolar'));
+      time(t('中天', 'Transit'), events.transit, '—');
+      time(t('落下', 'Set'), null, t('不落', 'never'));
     } else {
-      time('升起', events.rise, '—');
-      time('中天', events.transit, '—');
-      time('落下', events.set, '—');
+      time(t('升起', 'Rise'), events.rise, '—');
+      time(t('中天', 'Transit'), events.transit, '—');
+      time(t('落下', 'Set'), events.set, '—');
     }
 
-    const status = h.alt > 0 ? (h.alt < 10 ? '贴近地平线，需要开阔的视野' : '此刻可见') : '此刻在地平线以下';
-    const statusEl = el('div', `sky__card-status${h.alt > 0 ? ' is-up' : ''}`, item.kind === 'sun' ? '请勿直视太阳' : status);
+    const status = h.alt > 0
+      ? h.alt < 10 ? t('贴近地平线，需要开阔的视野', 'Low on the horizon: you need a clear view') : t('此刻可见', 'Visible now')
+      : t('此刻在地平线以下', 'Below the horizon now');
+    const statusEl = el('div', `sky__card-status${h.alt > 0 ? ' is-up' : ''}`, item.kind === 'sun' ? t('请勿直视太阳', 'Never look directly at the Sun') : status);
 
     const actions = el('div', 'sky__card-actions');
-    const center = el('button', 'btn btn--ghost', '居中');
+    const center = el('button', 'btn btn--ghost', t('居中', 'Centre'));
     center.type = 'button';
     center.addEventListener('click', () => this.lookAt(item));
     actions.appendChild(center);
     const object = item.object;
     if (object) {
-      const explore = el('button', 'btn', '在宇宙中查看');
+      const explore = el('button', 'btn', t('在宇宙中查看', 'Show in the atlas'));
       explore.type = 'button';
       explore.addEventListener('click', () => {
         this.close();
@@ -944,7 +975,7 @@ export class SkyView {
     const controller = new AbortController();
     this.picksAbort = controller;
     const date = new Date(Date.now() + this.offsetMin * 60000);
-    this.picksStatus.textContent = '正在请求星图后端…';
+    this.picksStatus.textContent = t('正在请求星图后端…', 'Asking the sky backend…');
     try {
       const chart = await fetchSkyChart(observer, controller.signal, Math.abs(this.offsetMin) >= 1 ? date : undefined);
       if (controller.signal.aborted) return;
@@ -952,10 +983,10 @@ export class SkyView {
         .filter(entry => entry.altitude > 0)
         .map(entry => ({ entry, item: this.itemForChart(entry) }))
         .filter(row => row.item !== null) as Array<{ entry: SkyChartObject; item: SkyItem }>;
-      this.renderPicks(rows.map(row => ({ item: row.item, alt: row.entry.altitude, az: row.entry.azimuth })), `sky.eunoia.top · ${rows.length} 个目标`);
+      this.renderPicks(rows.map(row => ({ item: row.item, alt: row.entry.altitude, az: row.entry.azimuth })), t(`sky.eunoia.top · ${rows.length} 个目标`, `sky.eunoia.top · ${rows.length} targets`));
     } catch (error) {
       if (controller.signal.aborted) return;
-      this.renderPicks(this.localPicks(date), `后端不可达（${(error as Error).message}），本地计算`);
+      this.renderPicks(this.localPicks(date), t(`后端不可达（${(error as Error).message}），本地计算`, `Backend unreachable (${(error as Error).message}); computed locally`));
     }
   }
 
@@ -989,7 +1020,7 @@ export class SkyView {
       seen.add(row.item.key);
       const chip = el('button', `sky-pick sky-pick--${row.item.kind}`);
       chip.type = 'button';
-      const dir = ['北', '东北', '东', '东南', '南', '西南', '西', '西北'][Math.round(row.az / 45) % 8];
+      const dir = azimuthName(row.az);
       chip.append(el('span', 'sky-pick__name', row.item.zh), el('span', 'sky-pick__pos', `${row.alt.toFixed(0)}° ${dir}`));
       chip.addEventListener('click', () => {
         this.lookAt(row.item);
@@ -997,7 +1028,7 @@ export class SkyView {
       });
       fragment.appendChild(chip);
     }
-    if (!seen.size) fragment.appendChild(el('span', 'sky__picks-empty', '地平线以上暂时没有推荐目标'));
+    if (!seen.size) fragment.appendChild(el('span', 'sky__picks-empty', t('地平线以上暂时没有推荐目标', 'Nothing to recommend above the horizon right now')));
     this.picksList.replaceChildren(fragment);
   }
 
@@ -1005,7 +1036,7 @@ export class SkyView {
 
   private renderWhere(): void {
     const o = this.options.getObserver();
-    this.whereText.textContent = `${o.label} · ${o.lat.toFixed(2)}°, ${o.lon.toFixed(2)}°`;
+    this.whereText.textContent = `${observerLabel(o)} · ${o.lat.toFixed(2)}°, ${o.lon.toFixed(2)}°`;
   }
 
   private setObserver(observer: Observer): void {
@@ -1018,11 +1049,11 @@ export class SkyView {
   }
 
   private async useLocation(): Promise<void> {
-    this.picksStatus.textContent = '正在获取定位…';
+    this.picksStatus.textContent = t('正在获取定位…', 'Getting your location…');
     try {
       this.setObserver(await locate());
     } catch (error) {
-      this.picksStatus.textContent = `${(error as Error).message}，继续使用当前位置`;
+      this.picksStatus.textContent = t(`${(error as Error).message}，继续使用当前位置`, `${(error as Error).message}; keeping the current location`);
     }
   }
 }

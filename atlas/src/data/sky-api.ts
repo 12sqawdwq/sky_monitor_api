@@ -1,4 +1,5 @@
 import type { Observer } from '../core/coords';
+import { t } from '../core/i18n';
 
 // Production is served from the backend's own origin (empty base); dev goes
 // through the Vite proxy.
@@ -42,12 +43,12 @@ function splitDisplayName(display: string): { en: string; zh: string } {
 
 export async function fetchSkyChart(observer: Observer, signal?: AbortSignal, time?: Date): Promise<SkyChartResult> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(new Error('请求超时')), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(new Error(t('请求超时', 'request timed out'))), TIMEOUT_MS);
   signal?.addEventListener('abort', () => controller.abort(signal.reason), { once: true });
   try {
     return await requestChart(observer, controller.signal, time);
   } catch (error) {
-    if (controller.signal.aborted && !signal?.aborted) throw new Error('请求超时');
+    if (controller.signal.aborted && !signal?.aborted) throw new Error(t('请求超时', 'request timed out'));
     throw error;
   } finally {
     clearTimeout(timer);

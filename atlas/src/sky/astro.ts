@@ -1,5 +1,6 @@
 import { Matrix4, Vector3 } from 'three';
 import { daysSinceJ2000, eclipticToEquatorial, equatorialToRaDec, type Observer } from '../core/coords';
+import { t } from '../core/i18n';
 
 const DEG = Math.PI / 180;
 const SIDEREAL_RATE = 15.0410686; // degrees of hour angle per hour
@@ -109,11 +110,11 @@ export function moonPhase(date: Date): MoonPhase {
   const waxing = elongation < 180;
   // Name by illuminated fraction: the quarters are the ~50% moments.
   let name: string;
-  if (illumination < 0.03) name = '新月';
-  else if (illumination > 0.97) name = '满月';
-  else if (illumination < 0.4) name = waxing ? '蛾眉月' : '残月';
-  else if (illumination <= 0.6) name = waxing ? '上弦月' : '下弦月';
-  else name = waxing ? '盈凸月' : '亏凸月';
+  if (illumination < 0.03) name = t('新月', 'New Moon');
+  else if (illumination > 0.97) name = t('满月', 'Full Moon');
+  else if (illumination < 0.4) name = waxing ? t('蛾眉月', 'Waxing Crescent') : t('残月', 'Waning Crescent');
+  else if (illumination <= 0.6) name = waxing ? t('上弦月', 'First Quarter') : t('下弦月', 'Last Quarter');
+  else name = waxing ? t('盈凸月', 'Waxing Gibbous') : t('亏凸月', 'Waning Gibbous');
   return { illumination, waxing, name };
 }
 

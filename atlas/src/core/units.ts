@@ -1,3 +1,5 @@
+import { isEn } from './i18n';
+
 // All scene distances are in light-years.
 export const AU_LY = 1.581250740982e-5;
 export const PC_LY = 3.261563777;
@@ -17,7 +19,13 @@ export interface DistanceParts {
 
 export function distanceParts(ly: number): DistanceParts {
   const abs = Math.abs(ly);
-  if (abs < 0.05) return { value: sig(ly / AU_LY), unit: '天文单位' };
+  if (abs < 0.05) return { value: sig(ly / AU_LY), unit: isEn ? 'AU' : '天文单位' };
+  if (isEn) {
+    if (abs < 1e4) return { value: sig(ly), unit: 'ly' };
+    if (abs < 1e6) return { value: sig(ly / 1e3), unit: 'thousand ly' };
+    if (abs < 1e9) return { value: sig(ly / 1e6), unit: 'million ly' };
+    return { value: sig(ly / 1e9), unit: 'billion ly' };
+  }
   if (abs < 1e4) return { value: sig(ly), unit: '光年' };
   if (abs < 1e8) return { value: sig(ly / 1e4), unit: '万光年' };
   return { value: sig(ly / 1e8), unit: '亿光年' };

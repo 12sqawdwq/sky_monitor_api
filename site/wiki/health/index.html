@@ -3,351 +3,86 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Lingzhu Sky Health</title>
-  <style>
-    :root {
-      --bg: #050b16;
-      --panel: rgba(10, 20, 38, .72);
-      --line: rgba(151, 184, 255, .24);
-      --text: #eff7ff;
-      --muted: #aebdd4;
-      --cyan: #78f2ff;
-      --blue: #91b7ff;
-      --gold: #ffdc91;
-      --green: #9af0c7;
-      --rose: #ff8fb8;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      color: var(--text);
-      background:
-        radial-gradient(circle at 15% 12%, rgba(120,242,255,.18), transparent 28rem),
-        radial-gradient(circle at 82% 18%, rgba(145,183,255,.22), transparent 32rem),
-        radial-gradient(circle at 50% 100%, rgba(255,220,145,.12), transparent 30rem),
-        linear-gradient(180deg, #06101f 0%, #07172a 55%, #030711 100%);
-      font: 15px/1.7 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      overflow-x: hidden;
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image:
-        radial-gradient(circle, rgba(255,255,255,.82) 0 1px, transparent 1.5px),
-        radial-gradient(circle, rgba(120,242,255,.58) 0 1px, transparent 1.7px);
-      background-size: 120px 120px, 210px 210px;
-      background-position: 18px 18px, 88px 64px;
-      opacity: .44;
-      z-index: -1;
-    }
-
-    a {
-      color: var(--cyan);
-      text-decoration: none;
-    }
-
-    main {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 42px 20px 70px;
-    }
-
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 28px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 800;
-    }
-
-    .mark {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background:
-        radial-gradient(circle at 42% 32%, #fff 0 9%, transparent 10%),
-        conic-gradient(from 210deg, var(--cyan), var(--blue), var(--gold), var(--cyan));
-      box-shadow: 0 0 30px rgba(120,242,255,.36);
-    }
-
-    .links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(280px, .82fr) minmax(0, 1.18fr);
-      gap: 18px;
-      align-items: stretch;
-    }
-
-    .glass {
-      position: relative;
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      background:
-        linear-gradient(145deg, rgba(255,255,255,.11), rgba(255,255,255,.025)),
-        var(--panel);
-      backdrop-filter: blur(24px) saturate(140%);
-      box-shadow:
-        0 28px 90px rgba(0,0,0,.42),
-        inset 0 1px 0 rgba(255,255,255,.14);
-      overflow: hidden;
-    }
-
-    .glass::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background:
-        linear-gradient(118deg, rgba(255,255,255,.16), transparent 32%),
-        radial-gradient(circle at 20% 12%, rgba(120,242,255,.14), transparent 12rem);
-    }
-
-    .status-card {
-      min-height: 430px;
-      display: grid;
-      place-items: center;
-      padding: 28px;
-      text-align: center;
-    }
-
-    .orb {
-      position: relative;
-      width: 220px;
-      aspect-ratio: 1;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(circle at 50% 50%, rgba(154,240,199,.24), transparent 36%),
-        radial-gradient(circle at 50% 50%, rgba(120,242,255,.14), transparent 62%);
-      border: 1px solid rgba(120,242,255,.28);
-      box-shadow: 0 0 80px rgba(120,242,255,.18);
-    }
-
-    .orb::before,
-    .orb::after {
-      content: "";
-      position: absolute;
-      inset: 18px;
-      border-radius: 50%;
-      border: 1px solid rgba(120,242,255,.32);
-      animation: pulse 2.8s cubic-bezier(.2,.8,.2,1) infinite;
-    }
-
-    .orb::after {
-      inset: 44px;
-      animation-delay: .7s;
-    }
-
-    .orb strong {
-      font-size: 46px;
-      letter-spacing: 0;
-    }
-
-    .orb span {
-      display: block;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-
-    .details {
-      padding: 28px;
-    }
-
-    h1 {
-      margin: 0 0 10px;
-      font-size: clamp(34px, 6vw, 64px);
-      line-height: 1;
-      letter-spacing: 0;
-    }
-
-    .lead {
-      color: #d6e5ff;
-      max-width: 760px;
-      font-size: 18px;
-      margin: 0 0 24px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .metric {
-      border: 1px solid rgba(151,184,255,.2);
-      border-radius: 16px;
-      padding: 16px;
-      background: rgba(2,8,18,.36);
-    }
-
-    .metric span {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .metric strong {
-      display: block;
-      font-size: 23px;
-      margin-top: 4px;
-      word-break: break-word;
-    }
-
-    .panel-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 18px;
-    }
-
-    .panel {
-      padding: 18px;
-      min-height: 160px;
-    }
-
-    .panel h2 {
-      margin: 0 0 8px;
-      font-size: 18px;
-    }
-
-    .panel p {
-      margin: 0;
-      color: var(--muted);
-    }
-
-    .ok {
-      color: var(--green);
-    }
-
-    .bad {
-      color: var(--rose);
-    }
-
-    .loading {
-      color: var(--gold);
-    }
-
-    pre {
-      margin: 18px 0 0;
-      padding: 16px;
-      border: 1px solid rgba(151,184,255,.2);
-      border-radius: 14px;
-      overflow: auto;
-      max-height: 330px;
-      color: #dfeaff;
-      background: rgba(1,7,18,.58);
-      font: 13px/1.6 "SFMono-Regular", Consolas, monospace;
-    }
-
-    @keyframes pulse {
-      0% {
-        opacity: .14;
-        transform: scale(.78);
-      }
-      50% {
-        opacity: .8;
-      }
-      100% {
-        opacity: 0;
-        transform: scale(1.42);
-      }
-    }
-
-    @media (max-width: 880px) {
-      .hero,
-      .grid,
-      .panel-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+  <meta name="theme-color" content="#050505">
+  <title>服务状态 · 星海图志</title>
+  <meta name="description" content="星图后端的实时健康状态：API、星表、OpenAPI、星图接口和延迟。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%23050505%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%229%22 fill=%22none%22 stroke=%22%23c58a55%22 stroke-width=%221.5%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%222%22 fill=%22%23e7e1d5%22/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/wiki/wiki.css">
 </head>
 <body>
-  <main>
-    <nav class="topbar">
-      <a class="brand" href="/wiki"><span class="mark" aria-hidden="true"></span><span>Sky Health</span></a>
-      <div class="links">
-        <a href="/wiki">项目 Wiki</a>
-        <a href="/wiki/api">API 调用</a>
-        <a href="https://sky.eunoia.top/docs">OpenAPI</a>
-      </div>
+  <header class="site-header">
+    <a class="brand" href="/" title="返回星海图志">
+      <span class="brand__mark" aria-hidden="true"></span>
+      <span class="brand__name">星海图志</span>
+      <span class="brand__sub">Wiki</span>
+    </a>
+    <nav class="site-nav" aria-label="站点导航">
+      <a href="/">星图</a>
+      <a href="/wiki">Wiki</a>
+      <a href="/wiki/health" aria-current="page">服务状态</a>
+      <a href="/wiki/api">API 手册</a>
+      <a href="/docs">Swagger</a>
+      <a href="https://github.com/12sqawdwq/sky_monitor_api" rel="noopener">GitHub</a>
     </nav>
+  </header>
+  <div class="page page--single">
+    <main class="doc">
+      <div class="eyebrow">Service Status</div>
+      <h1>服务状态</h1>
+      <p class="lead">后端健康检查、OpenAPI、星图接口和响应延迟，每分钟自动刷新。原始 JSON 见 <a href="/health"><code>/health</code></a>。</p>
 
-    <section class="hero">
-      <div class="glass status-card">
-        <div class="orb">
-          <div>
-            <strong id="statusText" class="loading">...</strong>
-            <span id="statusSub">正在检测服务</span>
-          </div>
-        </div>
+      <div class="status-head" id="statusHead" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <div><strong id="statusText" class="loading">…</strong><span id="statusSub">正在检测服务</span></div>
       </div>
 
-      <div class="glass details">
-        <h1>服务健康星盘</h1>
-        <p class="lead">这里把后端健康检查、OpenAPI、星图接口和网络延迟做成可视化仪表盘。原始 JSON 健康检查仍保持在 <code>/health</code>。</p>
-
-        <div class="grid">
-          <div class="metric"><span>API 服务</span><strong id="apiStatus">检测中</strong></div>
-          <div class="metric"><span>版本</span><strong id="version">-</strong></div>
-          <div class="metric"><span>星表数据库</span><strong id="catalog">-</strong></div>
-          <div class="metric"><span>响应延迟</span><strong id="latency">-</strong></div>
-        </div>
-
-        <pre id="rawJson">等待健康检查结果...</pre>
+      <div class="facts" aria-label="健康指标">
+        <div><span>API 服务</span><strong id="apiStatus">检测中</strong></div>
+        <div><span>版本</span><strong id="version">-</strong></div>
+        <div><span>星表数据库</span><strong id="catalog">-</strong></div>
+        <div><span>响应延迟</span><strong id="latency">-</strong></div>
       </div>
-    </section>
 
-    <section class="panel-grid">
-      <article class="glass panel">
-        <h2>OpenAPI</h2>
-        <p id="openapiStatus">检测中...</p>
-      </article>
-      <article class="glass panel">
-        <h2>星图接口</h2>
-        <p id="chartStatus">检测中...</p>
-      </article>
-      <article class="glass panel">
-        <h2>最后刷新</h2>
-        <p id="updatedAt">-</p>
-      </article>
-    </section>
-  </main>
+      <h2><span class="num">01</span>接口检查</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>检查项</th><th>结果</th></tr></thead>
+          <tbody>
+            <tr><td><a href="/openapi.json"><code>/openapi.json</code></a></td><td id="openapiStatus">检测中…</td></tr>
+            <tr><td><code>/sky/chart</code>（苏州太仓）</td><td id="chartStatus">检测中…</td></tr>
+            <tr><td>最后刷新</td><td id="updatedAt">-</td></tr>
+          </tbody>
+        </table>
+      </div>
 
+      <h2><span class="num">02</span>原始响应</h2>
+      <div class="code-title"><span>GET /health</span><span>JSON</span></div>
+      <pre id="rawJson">等待健康检查结果…</pre>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <span>星海图志 · Sky Monitor · <a href="https://sky.eunoia.top/">sky.eunoia.top</a></span>
+    <span>恒星：HYG v3 · 星历：JPL DE421 · <a href="https://github.com/12sqawdwq/sky_monitor_api" rel="noopener">源代码</a></span>
+  </footer>
   <script>
-    const API_BASE = "https://sky.eunoia.top";
-    const statusText = document.getElementById("statusText");
-    const statusSub = document.getElementById("statusSub");
-    const apiStatus = document.getElementById("apiStatus");
-    const version = document.getElementById("version");
-    const catalog = document.getElementById("catalog");
-    const latency = document.getElementById("latency");
-    const rawJson = document.getElementById("rawJson");
-    const openapiStatus = document.getElementById("openapiStatus");
-    const chartStatus = document.getElementById("chartStatus");
-    const updatedAt = document.getElementById("updatedAt");
+    // Same origin: works on any deployment of the backend.
+    const API_BASE = "";
+    const $ = id => document.getElementById(id);
+    const statusHead = $("statusHead");
+    const statusText = $("statusText");
+    const statusSub = $("statusSub");
+    const apiStatus = $("apiStatus");
+    const version = $("version");
+    const catalog = $("catalog");
+    const latency = $("latency");
+    const rawJson = $("rawJson");
+    const openapiStatus = $("openapiStatus");
+    const chartStatus = $("chartStatus");
+    const updatedAt = $("updatedAt");
 
     function setOverall(ok, message) {
+      statusHead.className = `status-head ${ok ? "is-ok" : "is-bad"}`;
       statusText.textContent = ok ? "OK" : "ERR";
       statusText.className = ok ? "ok" : "bad";
       statusSub.textContent = message;
@@ -357,7 +92,7 @@
 
     async function timedJson(url) {
       const started = performance.now();
-      const response = await fetch(url, { headers: { "Accept": "application/json" } });
+      const response = await fetch(url, { headers: { "Accept": "application/json" }, cache: "no-store" });
       const elapsed = Math.round(performance.now() - started);
       if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
       return { data: await response.json(), elapsed };
@@ -379,7 +114,7 @@
 
       try {
         const openapi = await timedJson(`${API_BASE}/openapi.json`);
-        openapiStatus.innerHTML = `<span class="ok">可访问</span> · ${openapi.data.info?.version || "unknown"} · ${openapi.elapsed} ms`;
+        openapiStatus.innerHTML = `<span class="ok">可访问</span> · v${openapi.data.info?.version || "?"} · ${openapi.elapsed} ms`;
       } catch (error) {
         openapiStatus.innerHTML = `<span class="bad">失败</span> · ${error.message}`;
       }
@@ -392,7 +127,7 @@
         chartStatus.innerHTML = `<span class="bad">失败</span> · ${error.message}`;
       }
 
-      updatedAt.textContent = new Date().toLocaleString();
+      updatedAt.textContent = new Date().toLocaleString("zh-CN", { hour12: false });
     }
 
     refresh();
