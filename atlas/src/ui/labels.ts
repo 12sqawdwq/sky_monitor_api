@@ -3,6 +3,7 @@ import type { Vec3 } from '../core/coords';
 import type { AtlasObject } from '../data/objects';
 import type { Annotation, FrameState } from '../layers/types';
 import { nameOf, subtitleOf } from '../core/i18n';
+import { solarFocusWeight } from '../layers/constellations';
 
 export interface LabelItem {
   key: string;
@@ -85,6 +86,8 @@ export class LabelLayer {
       return object.kind === 'sun' ? item.priority : 3.6 - m * 0.55;
     }
     if (frame.logR < item.window[0] || frame.logR > item.window[1]) return null;
+    // Constellation names go with their figures: only around a Solar System centre.
+    if (item.style === 'con' && solarFocusWeight(frame) < 0.5) return null;
     return item.priority;
   }
 

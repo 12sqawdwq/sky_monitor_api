@@ -1,7 +1,7 @@
 import { BufferGeometry, Float32BufferAttribute, Group, LineBasicMaterial, LineSegments } from 'three';
 import { PALETTE } from '../core/materials';
 import { sceneToEquatorial, type Vec3 } from '../core/coords';
-import { logWindow } from '../core/units';
+import { logWindow, smoothstep } from '../core/units';
 import { constellationName } from '../data/constellations';
 import { STAR_STRIDE, type StarCatalog } from '../data/stars';
 import { ESSENTIAL_CONSTELLATIONS, ZODIAC_CONSTELLATIONS } from '../data/zodiac';
@@ -11,6 +11,15 @@ import type { Annotation, FrameState, Layer } from './types';
 const DEG = Math.PI / 180;
 const MATCH_COS = Math.cos(0.6 * DEG);
 const CANDIDATE_MAG = 5.3;
+
+/**
+ * 1 while the view centre is a Solar System target, fading to 0 once it is beyond
+ * ~0.03 ly (Voyager 1 is at ~0.003 ly, the nearest star at 4.2 ly). The figures are drawn
+ * as seen from the Sun, so around any other centre they mean nothing.
+ */
+export function solarFocusWeight(frame: FrameState): number {
+  return 1 - smoothstep(0.01, 0.03, Math.hypot(frame.focus[0], frame.focus[1], frame.focus[2]));
+}
 
 /**
  * Stick figures of the essential constellations drawn between the stars' true
@@ -86,8 +95,8 @@ export class ConstellationLayer implements Layer {
   }
 
   update(frame: FrameState): void {
-    // Figures only read as figures near the Sun; fade out as the camera leaves.
-    const opacity = logWindow(frame.logR, -6, -5, 0.8, 1.45);
+    // Figures only read as figures near the Sun, with a Solar System target at the centre.
+    const opacity = logWindow(frame.logR, -6, -5, 0.8, 1.45) * solarFocusWeight(frame);
     this.zodiac.opacity = opacity * 0.42;
     this.essential.opacity = opacity * 0.28;
     this.group.visible = opacity > 0.003;
