@@ -148,6 +148,8 @@ function stopTour(): void {
   if (!touring) return;
   touring = false;
   tourToken += 1;
+  // Stop the camera where it is; the tour loop sees the new token and exits.
+  controls.cancelFlight();
   ui.caption.classList.remove('is-active');
 }
 

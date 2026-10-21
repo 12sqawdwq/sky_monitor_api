@@ -155,18 +155,33 @@ export function riseTransitSet(positionAt: (date: Date) => RaDec, observer: Obse
     return result;
   };
 
-  // Anchor on the nearest culmination, then step a day if that pass has already set.
-  let transit = solve(date, 0).time!;
+  const never: RiseSet = { rise: null, transit: null, set: null, circumpolar: false, neverRises: true };
+  const circumpolar = (transit: Date): RiseSet => ({
+    rise: null,
+    transit: transit.getTime() < date.getTime() ? new Date(transit.getTime() + SIDEREAL_DAY_H * 3600000) : transit,
+    set: null,
+    circumpolar: true,
+    neverRises: false
+  });
+
+  // Anchor on the nearest culmination, then step a day if that pass has already set. Moving
+  // bodies (the Sun near the polar night, the Moon) can change between never-rising, rising
+  // and circumpolar from one day to the next, so every solve is checked before it is used.
+  const first = solve(date, 0);
+  if (first.neverRises || !first.time) return never;
+  let transit = first.time;
   let set = solve(transit, 1);
-  if (set.neverRises) return { rise: null, transit: null, set: null, circumpolar: false, neverRises: true };
-  if (set.circumpolar) {
-    if (transit.getTime() < date.getTime()) transit = new Date(transit.getTime() + SIDEREAL_DAY_H * 3600000);
-    return { rise: null, transit, set: null, circumpolar: true, neverRises: false };
-  }
+  if (set.neverRises) return never;
+  if (set.circumpolar) return circumpolar(transit);
   if (set.time && set.time.getTime() < date.getTime()) {
-    transit = solve(new Date(transit.getTime() + SIDEREAL_DAY_H * 3600000), 0).time!;
+    const next = solve(new Date(transit.getTime() + SIDEREAL_DAY_H * 3600000), 0);
+    if (next.neverRises || !next.time) return never;
+    transit = next.time;
     set = solve(transit, 1);
+    if (set.neverRises) return never;
+    if (set.circumpolar) return circumpolar(transit);
   }
   const rise = solve(transit, -1);
+  if (rise.neverRises) return never;
   return { rise: rise.time, transit, set: set.time, circumpolar: false, neverRises: false };
 }

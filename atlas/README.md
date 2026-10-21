@@ -16,6 +16,7 @@ cd atlas
 npm install
 npm run dev    # http://localhost:5173 ，/sky-api 代理到 https://sky.eunoia.top
 npm run build  # tsc 类型检查 + vite 构建，产物在 dist/
+npm test       # vitest：升落计算（极昼、极夜、移动天体）和推荐请求缓存
 ```
 
 `public/data/` 里已经带有烘焙好的数据，下载后可以直接运行。如需重新生成：

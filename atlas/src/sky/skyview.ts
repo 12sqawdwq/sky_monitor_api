@@ -21,6 +21,7 @@ import {
   type RaDec
 } from './astro';
 import { ridgeAltitude, SkyScene, type ConstellationRecord, type LineMode } from './scene';
+import { picksBucket, picksKey, PicksCache } from './picks-cache';
 import {
   eclipticLongitudeAtRa,
   eclipticRaDec,
@@ -199,7 +200,12 @@ export class SkyView {
   private viewShift = 0;
   private picksTimer = 0;
   private picksAbort: AbortController | null = null;
-  private lastPicksKey = '';
+  /** Backend answers by observer + absolute observation time; in-flight requests tracked apart. */
+  private picks = new PicksCache<SkyChartObject[]>();
+  /** One planetary computation per observation time, shared by all seven planets. */
+  private planetMemo: { time: number; planets: ReturnType<typeof geocentricPlanets> } = { time: NaN, planets: [] };
+  /** The card's DOM is built once per selection; refreshes only rewrite these values. */
+  private cardView: { item: SkyItem; shape: string; status: HTMLElement; values: HTMLElement[] } | null = null;
 
   private gyro = false;
   private orientation: { alpha: number; beta: number; gamma: number } | null = null;
@@ -376,6 +382,7 @@ export class SkyView {
     this.root.classList.remove('is-open');
     delete document.body.dataset.mode;
     this.picksAbort?.abort();
+    this.picks.cancel();
     this.options.onClose();
   }
 
@@ -423,10 +430,16 @@ export class SkyView {
         zh: nameOf(planet),
         en: subtitleOf(planet),
         kind: 'planet',
-        positionAt: date => geocentricPlanets(date).find(p => p.id === id)!,
+        positionAt: date => this.planetsAt(date).find(p => p.id === id)!,
         mag: PLANET_MAG[id]
       }));
     }
+  }
+
+  private planetsAt(date: Date): ReturnType<typeof geocentricPlanets> {
+    const time = date.getTime();
+    if (this.planetMemo.time !== time) this.planetMemo = { time, planets: geocentricPlanets(date) };
+    return this.planetMemo.planets;
   }
 
   private makeItem(partial: Omit<SkyItem, 'eq' | 'hor' | 'screen' | 'along'>): SkyItem {
@@ -862,32 +875,26 @@ export class SkyView {
     return item.positionAt ? item.positionAt(date) : item.radec!;
   }
 
-  private renderCard(item: SkyItem, date: Date): void {
-    this.lastCardRefresh = 0;
+  /** Everything the card shows for `item` at `date`, as label/value pairs. */
+  private cardModel(item: SkyItem, date: Date): {
+    kind: string;
+    status: string;
+    up: boolean;
+    stats: Array<[string, string]>;
+    times: Array<[string, string]>;
+    note: string | null;
+  } {
     const observer = this.options.getObserver();
     const h = toHorizontal(this.positionOf(item, date), observer, date);
     const horizon = item.kind === 'sun' ? -0.833 : item.kind === 'moon' ? 0.125 : -0.5667;
     const events = riseTransitSet(d => this.positionOf(item, d), observer, date, horizon);
 
-    const card = this.card;
-    card.replaceChildren();
-    const close = el('button', 'icon-btn sky__card-close', '×');
-    close.type = 'button';
-    close.setAttribute('aria-label', t('关闭', 'Close'));
-    close.addEventListener('click', () => this.deselect());
-
     const kind = item.kind === 'moon'
       ? t('卫星 · 月球', 'Satellite · the Moon')
       : item.kind === 'deep' && item.object ? KIND_LABEL[item.object.kind] : item.kind === 'sun' ? KIND_LABEL.sun : item.kind === 'planet' ? KIND_LABEL.planet : KIND_LABEL.star;
-    const head = el('div', 'sky__card-head');
-    head.append(el('div', 'sky__card-kind', kind), el('h3', 'sky__card-title', item.zh), el('div', 'sky__card-en', item.en));
 
-    const stats = el('div', 'sky__card-stats');
-    const stat = (k: string, v: string) => {
-      const cell = el('div', 'sky__stat');
-      cell.append(el('span', 'sky__stat-k', k), el('span', 'sky__stat-v', v));
-      stats.appendChild(cell);
-    };
+    const stats: Array<[string, string]> = [];
+    const stat = (k: string, v: string) => stats.push([k, v]);
     stat(t('高度', 'Altitude'), `${h.alt.toFixed(1)}°`);
     stat(t('方位', 'Azimuth'), `${h.az.toFixed(0)}° ${azimuthName(h.az)}`);
     if (item.kind === 'moon') {
@@ -897,7 +904,7 @@ export class SkyView {
       const lodge = mansionAt(this.mansions, moon.ra);
       if (lodge) stat(t('月宿', 'Lunar mansion'), `${mansionName(lodge.mansion)} · ${XIANG[lodge.mansion.xiang]}`);
     } else if (item.kind === 'planet') {
-      const planet = geocentricPlanets(date).find(p => p.id === item.key);
+      const planet = this.planetsAt(date).find(p => p.id === item.key);
       if (planet) stat(t('距地球', 'From Earth'), `${planet.distance.toFixed(2)} ${t('天文单位', 'AU')}`);
       if (item.mag !== undefined) stat(t('亮度', 'Magnitude'), t(`约 ${item.mag.toFixed(1)} 等`, `about ${item.mag.toFixed(1)}`));
     } else if (item.kind === 'sun') {
@@ -914,14 +921,11 @@ export class SkyView {
       stat(t('距离', 'Distance'), formatDistance(objectDistance(item.object)));
     }
 
-    const timeline = el('div', 'sky__card-times');
-    const time = (k: string, d: Date | null, fallback: string) => {
-      const cell = el('div', 'sky__time-cell');
-      cell.append(el('span', 'sky__stat-k', k), el('span', 'sky__stat-v', d ? dayLabel(d, date) : fallback));
-      timeline.appendChild(cell);
-    };
+    const times: Array<[string, string]> = [];
+    let note: string | null = null;
+    const time = (k: string, d: Date | null, fallback: string) => times.push([k, d ? dayLabel(d, date) : fallback]);
     if (events.neverRises) {
-      timeline.appendChild(el('p', 'sky__card-note', t('在你的纬度，它永远不会升到地平线以上。', 'At your latitude it never rises above the horizon.')));
+      note = t('在你的纬度，它此时不会升到地平线以上。', 'At your latitude it does not rise above the horizon at this time.');
     } else if (events.circumpolar) {
       time(t('升起', 'Rise'), null, t('拱极', 'circumpolar'));
       time(t('中天', 'Transit'), events.transit, '—');
@@ -932,10 +936,65 @@ export class SkyView {
       time(t('落下', 'Set'), events.set, '—');
     }
 
-    const status = h.alt > 0
-      ? h.alt < 10 ? t('贴近地平线，需要开阔的视野', 'Low on the horizon: you need a clear view') : t('此刻可见', 'Visible now')
-      : t('此刻在地平线以下', 'Below the horizon now');
-    const statusEl = el('div', `sky__card-status${h.alt > 0 ? ' is-up' : ''}`, item.kind === 'sun' ? t('请勿直视太阳', 'Never look directly at the Sun') : status);
+    const status = item.kind === 'sun'
+      ? t('请勿直视太阳', 'Never look directly at the Sun')
+      : h.alt > 0
+        ? h.alt < 10 ? t('贴近地平线，需要开阔的视野', 'Low on the horizon: you need a clear view') : t('此刻可见', 'Visible now')
+        : t('此刻在地平线以下', 'Below the horizon now');
+    return { kind, status, up: h.alt > 0, stats, times, note };
+  }
+
+  private renderCard(item: SkyItem, date: Date): void {
+    this.lastCardRefresh = 0;
+    const model = this.cardModel(item, date);
+    const shape = [...model.stats.map(([k]) => k), '#', model.note ?? model.times.map(([k]) => k).join('|')].join('|');
+    const values = [...model.stats.map(([, v]) => v), ...model.times.map(([, v]) => v)];
+
+    // Same object, same rows: rewrite the numbers only, so buttons keep focus.
+    const view = this.cardView;
+    if (view && view.item === item && view.shape === shape) {
+      view.status.textContent = model.status;
+      view.status.classList.toggle('is-up', model.up);
+      values.forEach((value, index) => {
+        if (view.values[index].textContent !== value) view.values[index].textContent = value;
+      });
+      return;
+    }
+
+    const card = this.card;
+    card.replaceChildren();
+    const close = el('button', 'icon-btn sky__card-close', '×');
+    close.type = 'button';
+    close.setAttribute('aria-label', t('关闭', 'Close'));
+    close.addEventListener('click', () => this.deselect());
+
+    const head = el('div', 'sky__card-head');
+    head.append(el('div', 'sky__card-kind', model.kind), el('h3', 'sky__card-title', item.zh), el('div', 'sky__card-en', item.en));
+
+    const valueEls: HTMLElement[] = [];
+    const stats = el('div', 'sky__card-stats');
+    for (const [k, v] of model.stats) {
+      const cell = el('div', 'sky__stat');
+      const value = el('span', 'sky__stat-v', v);
+      cell.append(el('span', 'sky__stat-k', k), value);
+      stats.appendChild(cell);
+      valueEls.push(value);
+    }
+
+    const timeline = el('div', 'sky__card-times');
+    if (model.note) {
+      timeline.appendChild(el('p', 'sky__card-note', model.note));
+    } else {
+      for (const [k, v] of model.times) {
+        const cell = el('div', 'sky__time-cell');
+        const value = el('span', 'sky__stat-v', v);
+        cell.append(el('span', 'sky__stat-k', k), value);
+        timeline.appendChild(cell);
+        valueEls.push(value);
+      }
+    }
+
+    const statusEl = el('div', `sky__card-status${model.up ? ' is-up' : ''}`, model.status);
 
     const actions = el('div', 'sky__card-actions');
     const center = el('button', 'btn btn--ghost', t('居中', 'Centre'));
@@ -954,6 +1013,7 @@ export class SkyView {
     }
 
     card.append(close, head, statusEl, stats, timeline, actions);
+    this.cardView = { item, shape, status: statusEl, values: valueEls };
   }
 
   // ---------------------------------------------------------------- picks
@@ -967,28 +1027,40 @@ export class SkyView {
   private async loadPicks(): Promise<void> {
     if (!this.active || this.playing) return;
     const observer = this.options.getObserver();
-    const minutes = Math.round(this.offsetMin / 10) * 10;
-    const key = `${observer.lat},${observer.lon},${minutes}`;
-    if (key === this.lastPicksKey) return;
-    this.lastPicksKey = key;
+    const date = new Date(Date.now() + this.offsetMin * 60000);
+    const key = picksKey(observer.lat, observer.lon, date);
+    const cached = this.picks.get(key);
+    if (cached) {
+      this.showBackendPicks(cached);
+      return;
+    }
+    if (this.picks.isPending(key)) return;
     this.picksAbort?.abort();
     const controller = new AbortController();
     this.picksAbort = controller;
-    const date = new Date(Date.now() + this.offsetMin * 60000);
+    const token = this.picks.begin(key);
     this.picksStatus.textContent = t('正在请求星图后端…', 'Asking the sky backend…');
     try {
-      const chart = await fetchSkyChart(observer, controller.signal, Math.abs(this.offsetMin) >= 1 ? date : undefined);
+      const chart = await fetchSkyChart(observer, controller.signal, new Date(picksBucket(date)));
       if (controller.signal.aborted) return;
-      const rows = chart.objects
-        // The backend lists the Sun when it is up; it is never a viewing recommendation.
-        .filter(entry => entry.altitude > 0 && entry.category !== 'sun')
-        .map(entry => ({ entry, item: this.itemForChart(entry) }))
-        .filter(row => row.item !== null) as Array<{ entry: SkyChartObject; item: SkyItem }>;
-      this.renderPicks(rows.map(row => ({ item: row.item, alt: row.entry.altitude, az: row.entry.azimuth })), t(`sky.eunoia.top · ${rows.length} 个目标`, `sky.eunoia.top · ${rows.length} targets`));
+      this.picks.resolve(token, key, chart.objects);
+      this.showBackendPicks(chart.objects);
     } catch (error) {
       if (controller.signal.aborted) return;
       this.renderPicks(this.localPicks(date), t(`后端不可达（${(error as Error).message}），本地计算`, `Backend unreachable (${(error as Error).message}); computed locally`));
+    } finally {
+      // Cancelled (the view closed) or failed: the next visit asks again.
+      this.picks.release(token);
     }
+  }
+
+  private showBackendPicks(objects: SkyChartObject[]): void {
+    const rows = objects
+      // The backend lists the Sun when it is up; it is never a viewing recommendation.
+      .filter(entry => entry.altitude > 0 && entry.category !== 'sun')
+      .map(entry => ({ entry, item: this.itemForChart(entry) }))
+      .filter(row => row.item !== null) as Array<{ entry: SkyChartObject; item: SkyItem }>;
+    this.renderPicks(rows.map(row => ({ item: row.item, alt: row.entry.altitude, az: row.entry.azimuth })), t(`sky.eunoia.top · ${rows.length} 个目标`, `sky.eunoia.top · ${rows.length} targets`));
   }
 
   private itemForChart(entry: SkyChartObject): SkyItem | null {
@@ -1045,7 +1117,6 @@ export class SkyView {
     this.options.onObserverChange(observer);
     (this.root.querySelector('.sky__locmenu') as HTMLElement).hidden = true;
     this.renderWhere();
-    this.lastPicksKey = '';
     this.schedulePicks(0);
   }
 
