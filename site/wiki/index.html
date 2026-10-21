@@ -4,137 +4,257 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050505">
-  <title>星海图志 Wiki · 星图后端</title>
-  <meta name="description" content="星海图志的星图后端：GPS 坐标进，可见的亮星、行星和深空天体出。架构、星表、交互演示、API 与部署。">
+  <title>开发者手册 · 星海图志</title>
+  <meta name="description" content="星图后端开发者手册：/sky/chart 参数与响应、调用示例、灵珠平台接入、筛选规则、架构与部署。">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%23050505%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%229%22 fill=%22none%22 stroke=%22%23c58a55%22 stroke-width=%221.5%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%222%22 fill=%22%23e7e1d5%22/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/wiki/wiki.css?v=43f03d5fa3">
+  <link rel="stylesheet" href="/wiki/wiki.css?v=0e8a834237">
 </head>
 <body>
   <header class="site-header">
     <a class="brand" href="/" title="返回星海图志">
       <span class="brand__mark" aria-hidden="true"></span>
       <span class="brand__name">星海图志</span>
-      <span class="brand__sub">Wiki</span>
+      <span class="brand__sub">Developers</span>
     </a>
     <nav class="site-nav" aria-label="站点导航">
       <a href="/">星图</a>
-      <a href="/wiki" aria-current="page">Wiki</a>
-      <a href="/wiki/health">服务状态</a>
-      <a href="/wiki/api">API 手册</a>
+      <a href="/wiki" aria-current="page">手册</a>
+      <a href="/wiki/health">监控台</a>
       <a href="/docs">Swagger</a>
       <a href="https://github.com/12sqawdwq/sky_monitor_api" rel="noopener">GitHub</a>
     </nav>
   </header>
-
   <div class="page">
-    <nav class="toc" aria-label="本页目录">
-      <div class="toc__title">本页</div>
+    <nav class="toc" aria-label="目录">
+      <div class="toc__title">目录</div>
       <ol>
-        <li><a href="#overview"><span class="toc__num">00</span>概览</a></li>
-        <li><a href="#architecture"><span class="toc__num">01</span>系统架构</a></li>
-        <li><a href="#catalog"><span class="toc__num">02</span>星表与筛选</a></li>
-        <li><a href="#live-demo"><span class="toc__num">03</span>交互演示</a></li>
-        <li><a href="#api"><span class="toc__num">04</span>核心 API</a></li>
-        <li><a href="#deployment"><span class="toc__num">05</span>部署</a></li>
-        <li><a href="#journal"><span class="toc__num">06</span>工程日志</a></li>
+        <li><a href="#intro">简介</a></li>
+        <li><a href="#quick-start">快速开始</a></li>
+        <li><a href="#endpoints">接口一览</a></li>
+        <li><a href="#api">/sky/chart 参数</a></li>
+        <li><a href="#response">响应结构</a></li>
+        <li><a href="#examples">调用示例</a></li>
+        <li><a href="#lingzhu">接入灵珠平台</a></li>
+        <li><a href="#filters">筛选规则</a></li>
+        <li><a href="#architecture">架构</a></li>
+        <li><a href="#deployment">部署</a></li>
+        <li><a href="#try">在线试用</a></li>
+        <li><a href="#changelog">更新记录</a></li>
       </ol>
     </nav>
 
-    <main class="doc doc--wide">
-      <section id="overview">
-        <div class="eyebrow">GPS Sky Chart Backend · FastAPI · HYG · Skyfield</div>
-        <h1>把当前位置切成一张可调用的星图</h1>
-        <p class="lead">
-          星海图志的星图后端：接收 GPS 经纬度和时间，返回此刻地平线以上值得看的亮星、行星、星团、星云与星系，
-          并附上可以直接绘制极坐标星图的相对坐标和给大语言模型用的中文观测语料。
-        </p>
-        <div class="actions">
-          <a class="btn" href="/">打开星海图志</a>
-          <a class="btn btn--ghost" href="/wiki/api">API 调用手册</a>
-          <a class="btn btn--ghost" href="/wiki/health">服务状态</a>
-        </div>
-        <div class="facts" aria-label="项目要点">
-          <div><strong>HTTPS</strong><span>sky.eunoia.top 同域部署</span></div>
-          <div><strong>SQLite</strong><span>本地 HYG 恒星星表</span></div>
-          <div><strong>Skyfield</strong><span>DE421 行星星历</span></div>
-          <div><strong>OpenAPI</strong><span>灵珠平台可直接导入</span></div>
-        </div>
+    <main class="doc manual">
+      <section id="intro">
+        <h1>星图后端开发者手册</h1>
+        <p>星图后端根据 GPS 经纬度和时间，计算该地点此刻地平线以上值得观测的亮星、行星和深空天体，返回结构化 JSON：每个天体的高度角、方位角、星等，以及可以直接绘制极坐标星图的相对坐标，另附一段给大语言模型使用的中文观测语料。</p>
+        <div class="table-wrap"><table class="kv">
+          <tbody>
+            <tr><th>Base URL</th><td><code>https://sky.eunoia.top</code></td></tr>
+            <tr><th>认证</th><td>无</td></tr>
+            <tr><th>格式</th><td>JSON，UTF-8</td></tr>
+            <tr><th>版本</th><td>0.3.1</td></tr>
+            <tr><th>文档</th><td><a href="/docs">Swagger UI</a> · <a href="/redoc">ReDoc</a> · <a href="/openapi.json">openapi.json</a></td></tr>
+            <tr><th>运行状态</th><td><a href="/wiki/health">服务监控台</a> · <a href="/health">/health</a></td></tr>
+            <tr><th>源代码</th><td><a href="https://github.com/12sqawdwq/sky_monitor_api">github.com/12sqawdwq/sky_monitor_api</a></td></tr>
+          </tbody>
+        </table></div>
+        <p>同一域名的首页 <a href="/">星海图志</a> 是这个后端的前端：三维宇宙图谱和“今晚星空”，其中的“今晚推荐”就来自 <code>/sky/chart</code>。</p>
+      </section>
+
+      <section id="quick-start">
+        <h2>快速开始</h2>
+        <p>最小请求只需要纬度和经度：</p>
+        <pre><code>curl "https://sky.eunoia.top/sky/chart?latitude=31.2304&amp;longitude=121.4737"</code></pre>
+        <p>后端默认使用：高度角 ≥ 15°、恒星 ≤ 3 等、深空天体 ≤ 9 等，并自动控制返回数量（默认 28 个）。</p>
+      </section>
+
+      <section id="endpoints">
+        <h2>接口一览</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>方法</th><th>路径</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>GET, POST</td><td><code>/sky/chart</code></td><td>此时此地的可见天体与星图坐标（主接口）</td></tr>
+            <tr><td>GET, POST</td><td><code>/sky/facts</code></td><td>天体知识条目</td></tr>
+            <tr><td>POST</td><td><code>/sky/ask</code></td><td>观星问答</td></tr>
+            <tr><td>GET</td><td><code>/stars/bright</code></td><td>亮星列表，<code>?limit=20</code></td></tr>
+            <tr><td>GET</td><td><code>/stars/search</code></td><td>按名称查恒星，<code>?name=Sirius</code></td></tr>
+            <tr><td>GET</td><td><code>/catalog/stats</code></td><td>星表统计</td></tr>
+            <tr><td>GET</td><td><code>/reasoning/corpus</code></td><td>生成 <code>reasoning_context</code> 用的中文观测语料</td></tr>
+            <tr><td>GET</td><td><code>/health</code></td><td>健康检查</td></tr>
+          </tbody>
+        </table></div>
+        <p>每个接口的完整字段以 <a href="/openapi.json">OpenAPI</a> 为准。</p>
+      </section>
+
+      <section id="api">
+        <h2>/sky/chart 参数</h2>
+        <p>GET 调用时参数放在 Query 中，POST 调用时放在 JSON 请求体中，字段名相同。后端也接受字符串形式的数字，但建议按 Number 传。</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>参数</th><th>必填</th><th>类型</th><th>默认</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><code>latitude</code></td><td>是</td><td>Number</td><td></td><td>纬度，-90 到 90。也可写作 <code>lat</code></td></tr>
+            <tr><td><code>longitude</code></td><td>是</td><td>Number</td><td></td><td>经度，-180 到 180。也可写作 <code>lon</code></td></tr>
+            <tr><td><code>time_utc</code></td><td>否</td><td>String</td><td>当前时间</td><td>UTC 时间，ISO 8601，如 <code>2026-05-16T03:15:00Z</code></td></tr>
+            <tr><td><code>total_limit</code></td><td>否</td><td>Integer</td><td>28</td><td>返回天体数量，8 到 60</td></tr>
+            <tr><td><code>min_altitude_deg</code></td><td>否</td><td>Number</td><td>15</td><td>恒星和深空天体的最低高度角，0 到 90</td></tr>
+            <tr><td><code>star_max_mag</code></td><td>否</td><td>Number</td><td>3</td><td>恒星的最暗星等，最大 6。POST 时也可写作 <code>max_magnitude</code></td></tr>
+            <tr><td><code>deep_sky_max_mag</code></td><td>否</td><td>Number</td><td>9</td><td>深空天体的最暗星等，0 到 12</td></tr>
+            <tr><td><code>include_planets</code></td><td>否</td><td>Boolean</td><td>true</td><td>是否包含行星</td></tr>
+            <tr><td><code>include_deep_sky</code></td><td>否</td><td>Boolean</td><td>true</td><td>是否包含深空天体</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="response">
+        <h2>响应结构</h2>
+        <p>顶层字段是 <code>sky_chart</code>：</p>
+        <pre><code>{
+  "sky_chart": {
+    "observer": {"lat": 31.2304, "lon": 121.4737},
+    "time_utc": "2026-05-16T03:35:45Z",
+    "coordinate_system": {
+      "horizontal": "azimuth_deg: 0 north, 90 east, 180 south, 270 west",
+      "chart_projection": "polar_azimuthal_horizon"
+    },
+    "counts": {"star": 12, "planet": 4, "deep_sky": 6},
+    "objects": [
+      {
+        "category": "star",
+        "display_name": "五车二",
+        "azimuth_deg": 49.03,
+        "altitude_deg": 62.3,
+        "magnitude": 0.08,
+        "chart_x": 0.2324,
+        "chart_y": 0.2018,
+        "chart_radius": 0.3078
+      }
+    ],
+    "reasoning_context": {
+      "corpus_version": "0.1.0",
+      "summary": "…",
+      "bullets": [],
+      "object_insights": []
+    }
+  }
+}</code></pre>
+        <div class="table-wrap"><table>
+          <thead><tr><th>字段</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><code>category</code></td><td><code>star</code>、<code>planet</code> 或 <code>deep_sky</code></td></tr>
+            <tr><td><code>azimuth_deg</code></td><td>方位角：0 北、90 东、180 南、270 西</td></tr>
+            <tr><td><code>altitude_deg</code></td><td>高度角：0 为地平线，90 为天顶</td></tr>
+            <tr><td><code>chart_radius</code></td><td><code>(90 − 高度角) / 90</code>：0 为天顶，1 为地平线</td></tr>
+            <tr><td><code>chart_x</code>, <code>chart_y</code></td><td>极坐标星图上的位置，x 向东为正、y 向北为正，范围 −1 到 1</td></tr>
+            <tr><td><code>reasoning_context</code></td><td>中文观测建议和目标解释，供大语言模型组织回答</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="examples">
+        <h2>调用示例</h2>
+        <p>限制返回数量：</p>
+        <pre><code>curl "https://sky.eunoia.top/sky/chart?latitude=31.2304&amp;longitude=121.4737&amp;total_limit=8"</code></pre>
+        <p>指定观测时间：</p>
+        <pre><code>curl "https://sky.eunoia.top/sky/chart?latitude=31.2304&amp;longitude=121.4737&amp;time_utc=2026-10-20T14:00:00Z"</code></pre>
+        <p>POST：</p>
+        <pre><code>curl -X POST "https://sky.eunoia.top/sky/chart" \
+  -H "Content-Type: application/json" \
+  -d '{"latitude": 31.2304, "longitude": 121.4737, "min_altitude_deg": 15, "total_limit": 28}'</code></pre>
+        <p>其他接口：</p>
+        <pre><code>curl "https://sky.eunoia.top/stars/bright?limit=20"
+curl "https://sky.eunoia.top/stars/search?name=Sirius"
+curl "https://sky.eunoia.top/catalog/stats"
+curl "https://sky.eunoia.top/reasoning/corpus"</code></pre>
+      </section>
+
+      <section id="lingzhu">
+        <h2>接入灵珠平台</h2>
+        <ol>
+          <li>导入工具时，URL 和原始数据框都填 <code>https://sky.eunoia.top/openapi.json</code>。</li>
+          <li>选择 <code>GET /sky/chart</code>，平台会把坐标作为 Query 参数传入。</li>
+          <li>只保留 <code>latitude</code> 和 <code>longitude</code> 两个必填参数（Number），其余参数用后端默认值；不要把 <code>User-Agent</code> 当作用户输入。</li>
+        </ol>
+        <p>OpenAPI 的 <code>servers</code> 已固定为 <code>https://sky.eunoia.top</code>。如果平台仍显示 IP 地址，多半是旧的导入缓存，删除工具后重新导入即可。</p>
+      </section>
+
+      <section id="filters">
+        <h2>筛选规则</h2>
+        <p>目标是真实的观测体验：只返回高度够、亮度够、辨识度高的天体，而不是把原始星表整个交给模型。</p>
+        <ul>
+          <li><strong>恒星</strong>：来自 HYG Database，含常用名、赤经赤纬、视星等、距离、光谱型和星座。默认视星等 ≤ 3、高度角 ≥ 15°。</li>
+          <li><strong>行星</strong>：Skyfield + JPL DE421 计算。只要在地平线以上就进入候选，方便回答“今晚能不能看到土星”。</li>
+          <li><strong>深空天体</strong>：内置知名星团、星云、星系清单，亮度阈值放宽到 9 等，重点覆盖 M31、M42、M45 等。</li>
+        </ul>
       </section>
 
       <section id="architecture">
-        <h2><span class="num">01</span>系统架构</h2>
-        <p>后端把稳定的星表数据、实时天文计算和平台可调用的 API 分层处理。大语言模型不做天文计算，只读取结构化结果再组织语言。</p>
-        <div class="flow" aria-label="调用链路">
-          <div class="flow__step">GPS 坐标<small>latitude / longitude</small></div>
-          <div class="flow__step">天文计算<small>Alt / Az</small></div>
-          <div class="flow__step">星表筛选<small>mag / altitude</small></div>
-          <div class="flow__step">星图投影<small>chart_x / chart_y</small></div>
-          <div class="flow__step">前端与工具<small>星海图志 · 灵珠</small></div>
-        </div>
-        <p>同一个域名下，首页 <a href="/">星海图志</a> 是三维宇宙图谱和“今晚星空”，它的“今晚推荐”直接调用这里的 <code>/sky/chart</code>；其余路径由 FastAPI 提供。</p>
+        <h2>架构</h2>
+        <p>请求依次经过五步，大语言模型不参与天文计算，只读取结构化结果组织语言：</p>
+        <ol>
+          <li>接收 GPS 坐标（latitude / longitude）和时间；</li>
+          <li>天文计算：赤道坐标转地平坐标（高度角、方位角）；</li>
+          <li>星表筛选：按星等和高度角过滤、排序、限量；</li>
+          <li>星图投影：计算 <code>chart_x</code>、<code>chart_y</code>、<code>chart_radius</code>；</li>
+          <li>附上 <code>reasoning_context</code>，返回给前端或灵珠工具。</li>
+        </ol>
       </section>
 
-      <section id="catalog">
-        <h2><span class="num">02</span>星表与筛选逻辑</h2>
-        <p>目标是真实的观测体验：默认只返回高度够、亮度够、辨识度高的天体，而不是把原始星表整个丢给模型。</p>
-        <div class="grid">
-          <article class="box">
-            <span class="tag">Stars</span>
-            <h3>恒星</h3>
-            <p>来自 HYG Database，保留常用名、赤经赤纬、视星等、距离、光谱型和星座。默认视星等 ≤ 3、高度角 ≥ 15°。</p>
-          </article>
-          <article class="box">
-            <span class="tag">Planets</span>
-            <h3>太阳系行星</h3>
-            <p>Skyfield + DE421 计算。行星的门槛放宽：只要在地平线以上就进入候选，方便回答“今晚能不能看到土星”。</p>
-          </article>
-          <article class="box">
-            <span class="tag">Deep Sky</span>
-            <h3>深空天体</h3>
-            <p>内置知名星团、星云、星系清单，亮度阈值放宽到 9 等，重点覆盖 M31、M42、M45 等高辨识目标。</p>
-          </article>
-        </div>
+      <section id="deployment">
+        <h2>部署</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>路径</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td><code>/</code>, <code>/tonight</code>, <code>/tour</code></td><td>星海图志前端（静态文件）</td></tr>
+            <tr><td><code>/wiki</code></td><td>本手册（静态文件）</td></tr>
+            <tr><td><code>/wiki/health</code></td><td>服务监控台（静态文件）</td></tr>
+            <tr><td><code>/docs</code>, <code>/redoc</code>, <code>/openapi.json</code></td><td>接口文档</td></tr>
+            <tr><td>其余路径</td><td>FastAPI</td></tr>
+          </tbody>
+        </table></div>
+        <ul>
+          <li>Nginx 监听 80 / 443，使用 Let’s Encrypt 证书，续期后自动 reload。</li>
+          <li>FastAPI 绑定 <code>127.0.0.1:8000</code>，由 systemd 托管（服务名 <code>lingzhuback</code>）。</li>
+          <li>本地运行、数据准备和 Nginx 示例配置见仓库 <a href="https://github.com/12sqawdwq/sky_monitor_api#readme">README</a>。</li>
+        </ul>
       </section>
 
-      <section id="live-demo">
-        <h2><span class="num">03</span>交互演示</h2>
-        <p>完整链路的可交互演示：输入地点或上传坐标文本，前端解析出 GPS，请求后端拿到星图 JSON，再画成星图并生成推理反馈。推理反馈由前端根据 JSON 生成，用来模拟大语言模型拿到工具结果后的总结。</p>
+      <section id="try">
+        <h2>在线试用</h2>
+        <p>输入城市名或坐标（也可以上传含坐标的 txt / json / csv 文件），页面会调用 <code>/sky/chart</code>，按 <code>chart_x</code> / <code>chart_y</code> 画出星图，并显示返回的 JSON 摘要。拖拽平移、滚轮缩放、点击天体查看详情。</p>
 
         <div class="demo">
-          <aside class="demo-controls">
+          <div class="demo-controls">
             <div class="field-group">
               <label for="locationInput">位置</label>
               <textarea id="locationInput" placeholder="苏州太仓 / 巴黎 / Tokyo / 31.4591, 121.1298 / latitude:31.4591 longitude:121.1298">苏州太仓</textarea>
             </div>
             <div class="chips" aria-label="示例位置">
               <button class="chip" type="button" data-location="苏州太仓">苏州太仓</button>
-              <button class="chip" type="button" data-location="上海">上海</button>
               <button class="chip" type="button" data-location="北京">北京</button>
               <button class="chip" type="button" data-location="巴黎">巴黎</button>
               <button class="chip" type="button" data-location="Tokyo">Tokyo</button>
-              <button class="chip" type="button" data-location="31.4591, 121.1298">坐标样例</button>
+              <button class="chip" type="button" data-location="31.4591, 121.1298">31.4591, 121.1298</button>
             </div>
             <div class="field-group">
-              <label for="coordinateFile">上传坐标文件</label>
+              <label for="coordinateFile">坐标文件</label>
               <input id="coordinateFile" type="file" accept=".txt,.json,.csv">
             </div>
-            <div class="actions">
-              <button class="btn" id="runDemo" type="button">解析并生成星图</button>
+            <div class="demo-buttons">
+              <button class="btn" id="runDemo" type="button">生成星图</button>
               <button class="btn btn--ghost" id="useBrowserLocation" type="button">使用浏览器定位</button>
             </div>
             <div class="demo-status" id="demoStatus" aria-live="polite">等待输入位置。</div>
-          </aside>
+          </div>
 
           <div class="demo-stage">
-            <div class="pipeline" aria-label="调用链路状态">
-              <div class="pipe-step" data-step="parse"><div class="pipe-kicker">01</div><div class="pipe-title">前端解析</div><div class="pipe-copy">从文本、文件或定位提取 GPS</div></div>
-              <div class="pipe-step" data-step="request"><div class="pipe-kicker">02</div><div class="pipe-title">请求后端</div><div class="pipe-copy">GET /sky/chart</div></div>
-              <div class="pipe-step" data-step="render"><div class="pipe-kicker">03</div><div class="pipe-title">绘制星图</div><div class="pipe-copy">按 chart_x / chart_y 定位</div></div>
-              <div class="pipe-step" data-step="reason"><div class="pipe-kicker">04</div><div class="pipe-title">推理反馈</div><div class="pipe-copy">按亮度、高度和类别给建议</div></div>
+            <div class="pipeline" aria-label="调用步骤">
+              <div class="pipe-step" data-step="parse"><div class="pipe-kicker">1</div><div class="pipe-title">解析位置</div></div>
+              <div class="pipe-step" data-step="request"><div class="pipe-kicker">2</div><div class="pipe-title">请求 /sky/chart</div></div>
+              <div class="pipe-step" data-step="render"><div class="pipe-kicker">3</div><div class="pipe-title">绘制星图</div></div>
+              <div class="pipe-step" data-step="reason"><div class="pipe-kicker">4</div><div class="pipe-title">观测建议</div></div>
             </div>
-
             <div class="sky-panel" id="skyPanel" aria-label="星图">
-              <div class="chart-empty" id="chartEmpty">点击“解析并生成星图”后，这里会出现该地点此刻的星图。<br>拖拽平移 · 滚轮缩放 · 点击天体查看详情</div>
+              <div class="chart-empty" id="chartEmpty">点击“生成星图”后显示该地点此刻的星图。</div>
               <div class="chart-controls" id="chartControls" aria-label="星图控制">
                 <button type="button" data-chart-action="zoom-out" title="缩小" aria-label="缩小">−</button>
                 <button type="button" data-chart-action="zoom-in" title="放大" aria-label="放大">+</button>
@@ -144,7 +264,7 @@
                 <button type="button" data-chart-action="time-forward" title="前进 30 分钟" aria-label="前进 30 分钟">+30m</button>
                 <button type="button" data-chart-action="reset-view" title="重置视角" aria-label="重置视角">0</button>
               </div>
-              <div class="chart-readout" id="chartReadout">缩放 100% · 视角 0° · 等待星图</div>
+              <div class="chart-readout" id="chartReadout">缩放 100% · 视角 0°</div>
               <div class="object-drawer" id="objectDrawer" hidden></div>
             </div>
             <div class="chart-meta" id="chartMeta">
@@ -153,67 +273,38 @@
               <div class="meta-box"><strong>-</strong><span>深空</span></div>
               <div class="meta-box"><strong>-</strong><span>总数</span></div>
             </div>
-
             <div class="reasoning-panel" id="reasoningPanel">
-              <h3>LLM 推理反馈</h3>
-              <p>运行演示后，这里会给出适合用户阅读的观星建议。</p>
+              <h3>观测建议</h3>
+              <p>生成星图后，这里显示根据返回结果整理的观测建议，相当于大语言模型拿到工具结果后的总结。</p>
             </div>
             <div class="json-panel">
-              <h3>后端 JSON 摘要</h3>
+              <h3>JSON 摘要</h3>
               <pre><code id="jsonPreview">等待 /sky/chart 返回数据。</code></pre>
             </div>
           </div>
         </div>
-        <p>想看真实的天空而不是示意投影，可以打开 <a href="/tonight">今晚星空</a>。</p>
       </section>
 
-      <section id="api">
-        <h2><span class="num">04</span>核心 API</h2>
-        <p>灵珠平台已验证的调用方式是 GET Query 参数。OpenAPI 的 <code>servers</code> 固定为域名，避免平台把服务地址识别成 IP。</p>
-        <div class="code-title"><span>GET /sky/chart</span><span>curl</span></div>
-        <pre><code>curl "https://sky.eunoia.top/sky/chart?latitude=31.2304&amp;longitude=121.4737"</code></pre>
-        <div class="callout">只传 <strong>latitude</strong> 和 <strong>longitude</strong> 即可。后端默认高度角 15°、恒星 3 等、深空天体 9 等，并自动控制数量。完整参数见 <a href="/wiki/api">API 调用手册</a>，或在 <a href="/docs">Swagger</a> 里直接试。</div>
-      </section>
-
-      <section id="deployment">
-        <h2><span class="num">05</span>部署</h2>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>路径</th><th>内容</th></tr></thead>
-            <tbody>
-              <tr><td><a href="/"><code>/</code></a> · <a href="/tonight"><code>/tonight</code></a> · <a href="/tour"><code>/tour</code></a></td><td>星海图志前端：三维宇宙图谱、今晚星空、尺度巡游</td></tr>
-              <tr><td><a href="/wiki"><code>/wiki</code></a></td><td>本页</td></tr>
-              <tr><td><a href="/wiki/health"><code>/wiki/health</code></a></td><td>服务状态页</td></tr>
-              <tr><td><a href="/wiki/api"><code>/wiki/api</code></a></td><td>API 调用手册</td></tr>
-              <tr><td><a href="/docs"><code>/docs</code></a> · <a href="/redoc"><code>/redoc</code></a> · <a href="/openapi.json"><code>/openapi.json</code></a></td><td>接口文档与 OpenAPI</td></tr>
-              <tr><td><code>/sky/*</code> · <code>/stars/*</code> · <code>/catalog/*</code> · <a href="/health"><code>/health</code></a></td><td>FastAPI 接口</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <ul>
-          <li>Nginx 对外监听 80 / 443，Let’s Encrypt 证书，续期 hook 会 reload Nginx。</li>
-          <li>FastAPI 绑定 <code>127.0.0.1:8000</code>，由 systemd 托管。</li>
-          <li>前端和 Wiki 是静态文件，由 Nginx 直接提供。</li>
-        </ul>
-      </section>
-
-      <section id="journal">
-        <h2><span class="num">06</span>工程日志</h2>
-        <ol class="timeline">
-          <li><time>V0</time><h3>星表后端搭建</h3><p>FastAPI 服务、SQLite 星表、HYG 导入、基础健康检查和亮星查询。</p></li>
-          <li><time>V0.2</time><h3>天文计算接入</h3><p>引入 Skyfield / Astropy，按 GPS 坐标和时间计算地平坐标，输出可见天体。</p></li>
-          <li><time>V0.3</time><h3>星图 API 优化</h3><p>扩展深空天体和行星逻辑，增加 chart_x、chart_y、chart_radius，便于前端绘制极坐标星图。</p></li>
-          <li><time>V0.3.1</time><h3>灵珠平台适配</h3><p>OpenAPI servers 固定为 <code>https://sky.eunoia.top</code>，GET 参数兼容 latitude / longitude。</p></li>
-          <li><time>2026-10</time><h3>星海图志前端</h3><p>首页换成三维宇宙图谱和今晚星空（黄道、二十八宿、中英双语），Wiki 与状态页统一为同一套配色。</p></li>
-        </ol>
+      <section id="changelog">
+        <h2>更新记录</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>版本</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td>0.1</td><td>FastAPI 服务、SQLite 星表、HYG 导入、健康检查和亮星查询</td></tr>
+            <tr><td>0.2</td><td>接入 Skyfield / Astropy，按坐标和时间计算地平坐标</td></tr>
+            <tr><td>0.3</td><td>扩展行星和深空天体，增加 <code>chart_x</code>、<code>chart_y</code>、<code>chart_radius</code></td></tr>
+            <tr><td>0.3.1</td><td>OpenAPI <code>servers</code> 固定为域名，GET 参数兼容 latitude / longitude</td></tr>
+            <tr><td>2026-10</td><td>首页换成星海图志前端；Wiki 与 API 手册合并为本手册；新增服务监控台</td></tr>
+          </tbody>
+        </table></div>
       </section>
     </main>
   </div>
+
   <footer class="site-footer">
     <span>星海图志 · Sky Monitor · <a href="https://sky.eunoia.top/">sky.eunoia.top</a></span>
     <span>恒星：HYG v3 · 星历：JPL DE421 · <a href="https://github.com/12sqawdwq/sky_monitor_api" rel="noopener">源代码</a></span>
   </footer>
-
   <script>
     // chart_x / chart_y: horizon at radius 1 (42% of the panel), north up, east right.
     const CHART_GRID = `

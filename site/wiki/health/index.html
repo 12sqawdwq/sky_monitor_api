@@ -7,27 +7,25 @@
   <title>服务监控台 · 星海图志</title>
   <meta name="description" content="星图后端的实时监控：逐项检查接口、延迟趋势和可用率。">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%23050505%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%229%22 fill=%22none%22 stroke=%22%23c58a55%22 stroke-width=%221.5%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%222%22 fill=%22%23e7e1d5%22/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/wiki/wiki.css?v=43f03d5fa3">
+  <link rel="stylesheet" href="/wiki/wiki.css?v=0e8a834237">
 </head>
 <body>
   <header class="site-header">
     <a class="brand" href="/" title="返回星海图志">
       <span class="brand__mark" aria-hidden="true"></span>
       <span class="brand__name">星海图志</span>
-      <span class="brand__sub">Wiki</span>
+      <span class="brand__sub">Developers</span>
     </a>
     <nav class="site-nav" aria-label="站点导航">
       <a href="/">星图</a>
-      <a href="/wiki">Wiki</a>
-      <a href="/wiki/health" aria-current="page">服务状态</a>
-      <a href="/wiki/api">API 手册</a>
+      <a href="/wiki">手册</a>
+      <a href="/wiki/health" aria-current="page">监控台</a>
       <a href="/docs">Swagger</a>
       <a href="https://github.com/12sqawdwq/sky_monitor_api" rel="noopener">GitHub</a>
     </nav>
   </header>
   <div class="page page--single page--monitor">
     <main class="doc doc--wide">
-      <div class="eyebrow">Service Monitor</div>
       <h1>服务监控台</h1>
       <p class="lead">逐项检查星图后端、接口文档、前端和城市库，每 30 秒自动检测一次。延迟和可用率只记录在本页面，刷新后重新计数。</p>
 
@@ -51,7 +49,7 @@
         <div><span>本页可用率</span><strong id="factUptime">—</strong></div>
       </div>
 
-      <h2><span class="num">01</span>检查项</h2>
+      <h2>检查项</h2>
       <div class="table-wrap">
         <table class="checks">
           <thead><tr><th></th><th>检查</th><th>结果</th><th class="num-col">延迟</th><th class="spark-col">最近 20 次</th></tr></thead>
@@ -60,13 +58,13 @@
       </div>
       <p class="hint">延迟超过 1.5 秒标为“偏慢”。<code>/health</code> 失败时整体判为不可用，其余项失败判为部分异常。</p>
 
-      <h2><span class="num">02</span>延迟趋势</h2>
+      <h2>延迟趋势</h2>
       <div class="trend">
         <svg id="trendChart" viewBox="0 0 640 180" preserveAspectRatio="none" role="img" aria-label="主要接口的延迟趋势"></svg>
         <div class="trend__legend" id="trendLegend"></div>
       </div>
 
-      <h2><span class="num">03</span>原始响应</h2>
+      <h2>原始响应</h2>
       <div class="raw-grid">
         <div>
           <div class="code-title"><span>GET /health</span><span>JSON</span></div>

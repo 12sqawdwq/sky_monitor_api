@@ -7,7 +7,7 @@
 技术栈：Vite 7、TypeScript、three.js 0.180。没有使用 UI 框架，所有界面都是原生 DOM。
 
 - **中英双语**：默认英文，右上角（以及今晚星空工具栏）的按钮切换中文；也可用 `?lang=zh` / `?lang=en`，选择存在 localStorage。文案集中在 `t(中文, English)` 调用里（`src/core/i18n.ts`），静态页面用 `data-zh*` 属性。
-- **服务目录**：顶栏的“Services / 服务”菜单链接到后端的 Wiki、服务状态、API 手册、Swagger、ReDoc、OpenAPI 和健康检查；开发时这些路径由 Vite 代理到线上后端。
+- **服务目录**：顶栏的“Services / 服务”菜单链接到开发者手册、服务监控台、Swagger、ReDoc、OpenAPI 和健康检查；开发时这些路径由 Vite 代理到线上后端。
 
 ## 运行
 
