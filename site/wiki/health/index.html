@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050505">
-  <title>服务状态 · 星海图志</title>
-  <meta name="description" content="星图后端的实时健康状态：API、星表、OpenAPI、星图接口和延迟。">
+  <title>服务监控台 · 星海图志</title>
+  <meta name="description" content="星图后端的实时监控：逐项检查接口、延迟趋势和可用率。">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 fill=%22%23050505%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%229%22 fill=%22none%22 stroke=%22%23c58a55%22 stroke-width=%221.5%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%222%22 fill=%22%23e7e1d5%22/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/wiki/wiki.css">
+  <link rel="stylesheet" href="/wiki/wiki.css?v=43f03d5fa3">
 </head>
 <body>
   <header class="site-header">
@@ -25,39 +25,58 @@
       <a href="https://github.com/12sqawdwq/sky_monitor_api" rel="noopener">GitHub</a>
     </nav>
   </header>
-  <div class="page page--single">
-    <main class="doc">
-      <div class="eyebrow">Service Status</div>
-      <h1>服务状态</h1>
-      <p class="lead">后端健康检查、OpenAPI、星图接口和响应延迟，每分钟自动刷新。原始 JSON 见 <a href="/health"><code>/health</code></a>。</p>
+  <div class="page page--single page--monitor">
+    <main class="doc doc--wide">
+      <div class="eyebrow">Service Monitor</div>
+      <h1>服务监控台</h1>
+      <p class="lead">逐项检查星图后端、接口文档、前端和城市库，每 30 秒自动检测一次。延迟和可用率只记录在本页面，刷新后重新计数。</p>
 
-      <div class="status-head" id="statusHead" aria-live="polite">
-        <span class="status-dot" aria-hidden="true"></span>
-        <div><strong id="statusText" class="loading">…</strong><span id="statusSub">正在检测服务</span></div>
+      <section class="monitor-bar" id="monitorBar" aria-live="polite">
+        <span class="monitor-bar__dot" aria-hidden="true"></span>
+        <div class="monitor-bar__main">
+          <strong id="overallText">正在检测…</strong>
+          <span id="overallSub">首次检测进行中</span>
+        </div>
+        <div class="monitor-bar__side">
+          <span>上次检测 <b id="lastRun">—</b></span>
+          <span>下次 <b id="nextRun">—</b></span>
+          <button class="btn btn--ghost" id="runNow" type="button">立即检测</button>
+        </div>
+      </section>
+
+      <div class="facts" aria-label="关键指标">
+        <div><span>后端版本</span><strong id="factVersion">—</strong></div>
+        <div><span>星表</span><strong id="factCatalog">—</strong></div>
+        <div><span>平均延迟</span><strong id="factLatency">—</strong></div>
+        <div><span>本页可用率</span><strong id="factUptime">—</strong></div>
       </div>
 
-      <div class="facts" aria-label="健康指标">
-        <div><span>API 服务</span><strong id="apiStatus">检测中</strong></div>
-        <div><span>版本</span><strong id="version">-</strong></div>
-        <div><span>星表数据库</span><strong id="catalog">-</strong></div>
-        <div><span>响应延迟</span><strong id="latency">-</strong></div>
-      </div>
-
-      <h2><span class="num">01</span>接口检查</h2>
+      <h2><span class="num">01</span>检查项</h2>
       <div class="table-wrap">
-        <table>
-          <thead><tr><th>检查项</th><th>结果</th></tr></thead>
-          <tbody>
-            <tr><td><a href="/openapi.json"><code>/openapi.json</code></a></td><td id="openapiStatus">检测中…</td></tr>
-            <tr><td><code>/sky/chart</code>（苏州太仓）</td><td id="chartStatus">检测中…</td></tr>
-            <tr><td>最后刷新</td><td id="updatedAt">-</td></tr>
-          </tbody>
+        <table class="checks">
+          <thead><tr><th></th><th>检查</th><th>结果</th><th class="num-col">延迟</th><th class="spark-col">最近 20 次</th></tr></thead>
+          <tbody id="checkRows"></tbody>
         </table>
       </div>
+      <p class="hint">延迟超过 1.5 秒标为“偏慢”。<code>/health</code> 失败时整体判为不可用，其余项失败判为部分异常。</p>
 
-      <h2><span class="num">02</span>原始响应</h2>
-      <div class="code-title"><span>GET /health</span><span>JSON</span></div>
-      <pre id="rawJson">等待健康检查结果…</pre>
+      <h2><span class="num">02</span>延迟趋势</h2>
+      <div class="trend">
+        <svg id="trendChart" viewBox="0 0 640 180" preserveAspectRatio="none" role="img" aria-label="主要接口的延迟趋势"></svg>
+        <div class="trend__legend" id="trendLegend"></div>
+      </div>
+
+      <h2><span class="num">03</span>原始响应</h2>
+      <div class="raw-grid">
+        <div>
+          <div class="code-title"><span>GET /health</span><span>JSON</span></div>
+          <pre id="rawHealth">等待检测…</pre>
+        </div>
+        <div>
+          <div class="code-title"><span>GET /catalog/stats</span><span>JSON</span></div>
+          <pre id="rawCatalog">等待检测…</pre>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -66,72 +85,181 @@
     <span>恒星：HYG v3 · 星历：JPL DE421 · <a href="https://github.com/12sqawdwq/sky_monitor_api" rel="noopener">源代码</a></span>
   </footer>
   <script>
-    // Same origin: works on any deployment of the backend.
-    const API_BASE = "";
-    const $ = id => document.getElementById(id);
-    const statusHead = $("statusHead");
-    const statusText = $("statusText");
-    const statusSub = $("statusSub");
-    const apiStatus = $("apiStatus");
-    const version = $("version");
-    const catalog = $("catalog");
-    const latency = $("latency");
-    const rawJson = $("rawJson");
-    const openapiStatus = $("openapiStatus");
-    const chartStatus = $("chartStatus");
-    const updatedAt = $("updatedAt");
+    (function () {
+      const INTERVAL = 30000;
+      const SLOW_MS = 1500;
+      const HISTORY = 20;
+      const TREND = 30;
+      const $ = id => document.getElementById(id);
+      const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+      const clock = date => date.toLocaleTimeString("zh-CN", { hour12: false });
 
-    function setOverall(ok, message) {
-      statusHead.className = `status-head ${ok ? "is-ok" : "is-bad"}`;
-      statusText.textContent = ok ? "OK" : "ERR";
-      statusText.className = ok ? "ok" : "bad";
-      statusSub.textContent = message;
-      apiStatus.textContent = ok ? "运行中" : "异常";
-      apiStatus.className = ok ? "ok" : "bad";
-    }
+      // Each check fetches one endpoint and turns the response into a one-line summary.
+      const CHECKS = [
+        { id: "health", name: "API 健康检查", path: "/health", core: true, trend: "var(--brass)",
+          read: async r => { const d = await r.json(); state.health = d; return { ok: d.status === "ok", text: `状态 ${d.status} · v${d.version} · 星表${d.catalog_db_exists ? "已加载" : "缺失"}` }; } },
+        { id: "chart", name: "星图接口", path: "/sky/chart?latitude=31.4591&longitude=121.1298&total_limit=8", label: "/sky/chart（苏州太仓）", trend: "var(--copper)",
+          read: async r => { const c = (await r.json()).sky_chart?.counts || {}; return { ok: true, text: `恒星 ${c.star || 0} · 行星 ${c.planet || 0} · 深空 ${c.deep_sky || 0}` }; } },
+        { id: "openapi", name: "OpenAPI", path: "/openapi.json", trend: "var(--rose)",
+          read: async r => { const d = await r.json(); return { ok: true, text: `v${d.info?.version || "?"} · ${Object.keys(d.paths || {}).length} 个路径` }; } },
+        { id: "catalog", name: "星表统计", path: "/catalog/stats",
+          read: async r => { const d = await r.json(); state.catalog = d; return { ok: d.total_stars > 0, text: `${d.total_stars.toLocaleString()} 颗恒星 · 最亮 ${d.brightest_magnitude} 等` }; } },
+        { id: "bright", name: "亮星查询", path: "/stars/bright?limit=3",
+          read: async r => { const d = await r.json(); return { ok: d.count > 0, text: (d.stars || []).map(s => s.name_zh || s.name_en).join("、") }; } },
+        { id: "corpus", name: "观测语料", path: "/reasoning/corpus",
+          read: async r => { const d = await r.json(); return { ok: true, text: `v${d.version} · ${d.language}` }; } },
+        { id: "atlas", name: "星海图志首页", path: "/", method: "HEAD",
+          read: async r => ({ ok: true, text: r.headers.get("content-type") || "text/html" }) },
+        { id: "cities", name: "城市坐标库", path: "/wiki/cities.tsv", method: "HEAD",
+          read: async r => { const size = Number(r.headers.get("content-length")); return { ok: true, text: size ? `${(size / 1048576).toFixed(1)} MB` : "可访问" }; } }
+      ];
 
-    async function timedJson(url) {
-      const started = performance.now();
-      const response = await fetch(url, { headers: { "Accept": "application/json" }, cache: "no-store" });
-      const elapsed = Math.round(performance.now() - started);
-      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-      return { data: await response.json(), elapsed };
-    }
+      const state = { health: null, catalog: null, runs: 0, okCount: 0, total: 0, timer: 0, next: 0, running: false };
+      for (const check of CHECKS) check.history = [];
 
-    async function refresh() {
-      try {
-        const health = await timedJson(`${API_BASE}/health`);
-        setOverall(health.data.status === "ok", "后端健康检查通过");
-        version.textContent = health.data.version || "-";
-        catalog.textContent = health.data.catalog_db_exists ? "已加载" : "未找到";
-        catalog.className = health.data.catalog_db_exists ? "ok" : "bad";
-        latency.textContent = `${health.elapsed} ms`;
-        rawJson.textContent = JSON.stringify(health.data, null, 2);
-      } catch (error) {
-        setOverall(false, "健康检查失败");
-        rawJson.textContent = String(error.message || error);
+      // Rows are built once and updated in place.
+      const rows = $("checkRows");
+      for (const check of CHECKS) {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td><span class="check-dot" aria-hidden="true"></span></td>
+          <td><span class="check-name">${escapeHtml(check.name)}</span><a class="check-path" href="${check.path}">${escapeHtml(check.label || check.path)}</a></td>
+          <td class="check-result">检测中…</td>
+          <td class="num-col check-latency">—</td>
+          <td class="spark-col"><svg class="spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"></svg></td>`;
+        rows.appendChild(row);
+        check.row = row;
       }
 
-      try {
-        const openapi = await timedJson(`${API_BASE}/openapi.json`);
-        openapiStatus.innerHTML = `<span class="ok">可访问</span> · v${openapi.data.info?.version || "?"} · ${openapi.elapsed} ms`;
-      } catch (error) {
-        openapiStatus.innerHTML = `<span class="bad">失败</span> · ${error.message}`;
+      async function runCheck(check) {
+        const started = performance.now();
+        try {
+          const response = await fetch(check.path, { method: check.method || "GET", cache: "no-store", headers: { Accept: "application/json, text/plain, */*" } });
+          const ms = Math.round(performance.now() - started);
+          if (!response.ok) throw Object.assign(new Error(`HTTP ${response.status}`), { ms });
+          const result = await check.read(response);
+          return { ...result, ms };
+        } catch (error) {
+          return { ok: false, text: error.message || String(error), ms: error.ms ?? Math.round(performance.now() - started) };
+        }
       }
 
-      try {
-        const chart = await timedJson(`${API_BASE}/sky/chart?latitude=31.4591&longitude=121.1298&total_limit=8`);
-        const counts = chart.data.sky_chart?.counts || {};
-        chartStatus.innerHTML = `<span class="ok">可调用</span> · 恒星 ${counts.star || 0} · 行星 ${counts.planet || 0} · ${chart.elapsed} ms`;
-      } catch (error) {
-        chartStatus.innerHTML = `<span class="bad">失败</span> · ${error.message}`;
+      function tone(result) {
+        if (!result.ok) return "bad";
+        return result.ms > SLOW_MS ? "slow" : "ok";
       }
 
-      updatedAt.textContent = new Date().toLocaleString("zh-CN", { hour12: false });
-    }
+      function sparkline(svg, history) {
+        if (!history.length) return;
+        const max = Math.max(SLOW_MS, ...history.map(h => h.ms)) * 1.1;
+        const step = 100 / (HISTORY - 1);
+        const offset = (HISTORY - history.length) * step;
+        const points = history.map((h, i) => [offset + i * step, 22 - (h.ms / max) * 20]);
+        const line = points.map(p => p.map(v => v.toFixed(1)).join(",")).join(" ");
+        const slowY = (22 - (SLOW_MS / max) * 20).toFixed(1);
+        const fails = history.map((h, i) => h.ok ? "" : `<circle cx="${points[i][0].toFixed(1)}" cy="22" r="1.6" class="spark-fail"/>`).join("");
+        const last = points[points.length - 1];
+        svg.innerHTML = `<line x1="0" x2="100" y1="${slowY}" y2="${slowY}" class="spark-slow"/>
+          <polyline points="${line}" class="spark-line"/>${fails}
+          <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="1.8" class="spark-last"/>`;
+      }
 
-    refresh();
-    window.setInterval(refresh, 60000);
+      function renderTrend() {
+        const svg = $("trendChart");
+        const series = CHECKS.filter(c => c.trend);
+        const samples = series.flatMap(c => c.history.slice(-TREND).map(h => h.ms));
+        const top = Math.max(1000, ...samples) * 1.15;
+        const niceTop = Math.ceil(top / 500) * 500;
+        const W = 640, H = 180, L = 44, B = 22, T = 10;
+        const y = ms => T + (H - T - B) * (1 - ms / niceTop);
+        let grid = "";
+        for (let v = 0; v <= niceTop; v += niceTop / 4) {
+          grid += `<line x1="${L}" x2="${W}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="trend-grid"/>
+            <text x="${L - 6}" y="${(y(v) + 3).toFixed(1)}" class="trend-axis" text-anchor="end">${Math.round(v)}</text>`;
+        }
+        grid += `<text x="${L - 6}" y="${H - 6}" class="trend-axis" text-anchor="end">ms</text>`;
+        const step = (W - L) / (TREND - 1);
+        const lines = series.map(c => {
+          const hist = c.history.slice(-TREND);
+          if (!hist.length) return "";
+          const x0 = L + (TREND - hist.length) * step;
+          const pts = hist.map((h, i) => `${(x0 + i * step).toFixed(1)},${y(h.ms).toFixed(1)}`).join(" ");
+          return `<polyline points="${pts}" fill="none" stroke="${c.trend}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`;
+        }).join("");
+        svg.innerHTML = grid + lines;
+        $("trendLegend").innerHTML = series.map(c => {
+          const last = c.history[c.history.length - 1];
+          const avg = c.history.length ? Math.round(c.history.reduce((s, h) => s + h.ms, 0) / c.history.length) : null;
+          return `<span><i style="background:${c.trend}"></i>${escapeHtml(c.name)} <b>${last ? `${last.ms} ms` : "—"}</b>${avg !== null ? ` · 平均 ${avg} ms` : ""}</span>`;
+        }).join("");
+      }
+
+      function renderSummary(results) {
+        const failed = results.filter(r => !r.result.ok);
+        const coreDown = results.some(r => r.check.core && !r.result.ok);
+        const bar = $("monitorBar");
+        bar.className = `monitor-bar ${coreDown ? "is-bad" : failed.length ? "is-warn" : "is-ok"}`;
+        $("overallText").textContent = coreDown ? "服务不可用" : failed.length ? "部分异常" : "全部正常";
+        $("overallSub").textContent = `${results.length} 项检查 · ${results.length - failed.length} 正常${failed.length ? ` · ${failed.length} 异常：${failed.map(f => f.check.name).join("、")}` : ""}`;
+        $("lastRun").textContent = clock(new Date());
+
+        const h = state.health;
+        $("factVersion").textContent = h ? `v${h.version}` : "—";
+        const c = state.catalog;
+        $("factCatalog").textContent = c ? `${c.total_stars.toLocaleString()} 颗 · ≤ ${c.dimmest_magnitude} 等` : "—";
+        const ok = results.filter(r => r.result.ok);
+        $("factLatency").textContent = ok.length ? `${Math.round(ok.reduce((s, r) => s + r.result.ms, 0) / ok.length)} ms` : "—";
+        $("factUptime").textContent = state.total ? `${(state.okCount / state.total * 100).toFixed(1)}%` : "—";
+
+        $("rawHealth").textContent = h ? JSON.stringify(h, null, 2) : "不可用";
+        if (c) {
+          // Leave out the server-side file path.
+          const { database_path, ...visible } = c;
+          $("rawCatalog").textContent = JSON.stringify(visible, null, 2);
+        }
+      }
+
+      async function runAll() {
+        if (state.running) return;
+        state.running = true;
+        $("runNow").disabled = true;
+        window.clearTimeout(state.timer);
+        const results = await Promise.all(CHECKS.map(async check => ({ check, result: await runCheck(check) })));
+        for (const { check, result } of results) {
+          check.history.push({ ms: result.ms, ok: result.ok });
+          if (check.history.length > Math.max(HISTORY, TREND)) check.history.shift();
+          state.total += 1;
+          if (result.ok) state.okCount += 1;
+          const t = tone(result);
+          check.row.className = `is-${t}`;
+          check.row.querySelector(".check-result").innerHTML = `${t === "slow" ? '<span class="loading">偏慢</span> · ' : t === "bad" ? '<span class="bad">失败</span> · ' : ""}${escapeHtml(result.text)}`;
+          check.row.querySelector(".check-latency").textContent = `${result.ms} ms`;
+          sparkline(check.row.querySelector(".spark"), check.history.slice(-HISTORY));
+        }
+        state.runs += 1;
+        renderSummary(results);
+        renderTrend();
+        state.running = false;
+        $("runNow").disabled = false;
+        schedule();
+      }
+
+      function schedule() {
+        state.next = Date.now() + INTERVAL;
+        state.timer = window.setTimeout(() => { if (!document.hidden) runAll(); else schedule(); }, INTERVAL);
+      }
+
+      window.setInterval(() => {
+        const left = Math.max(0, Math.ceil((state.next - Date.now()) / 1000));
+        $("nextRun").textContent = state.running ? "检测中" : state.next ? `${left} 秒` : "—";
+      }, 500);
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && state.next && Date.now() > state.next) runAll();
+      });
+      $("runNow").addEventListener("click", runAll);
+      renderTrend();
+      runAll();
+    })();
   </script>
 </body>
 </html>

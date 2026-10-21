@@ -77,7 +77,7 @@ three.js 前端把它画成一张跨越 16 个数量级的交互星图，以及�
 | `app/` | FastAPI 入口、天文计算、SQLite 星表查询、深空天体、推理语料 |
 | `data/` | 可提交的中文观测语料 |
 | `scripts/` | 下载 HYG 星表和 DE421 星历，构建 SQLite 星表和城市索引 |
-| `site/wiki/` | 静态 Wiki（`/wiki`）、API 调用手册（`/wiki/api`）、服务状态页（`/wiki/health`），共用 `wiki.css`，与星图同一套配色 |
+| `site/wiki/` | 静态 Wiki（`/wiki`）、API 调用手册（`/wiki/api`）、服务监控台（`/wiki/health`，逐项检查接口、延迟趋势和可用率），共用 `wiki.css`，与星图同一套配色 |
 | `deploy/` | systemd 和 nginx 示例（含前端路由） |
 | `docs/media/` | README 用的截图和录屏 |
 | `tests/` | 后端单元测试 |
