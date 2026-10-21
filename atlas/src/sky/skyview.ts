@@ -980,7 +980,8 @@ export class SkyView {
       const chart = await fetchSkyChart(observer, controller.signal, Math.abs(this.offsetMin) >= 1 ? date : undefined);
       if (controller.signal.aborted) return;
       const rows = chart.objects
-        .filter(entry => entry.altitude > 0)
+        // The backend lists the Sun when it is up; it is never a viewing recommendation.
+        .filter(entry => entry.altitude > 0 && entry.category !== 'sun')
         .map(entry => ({ entry, item: this.itemForChart(entry) }))
         .filter(row => row.item !== null) as Array<{ entry: SkyChartObject; item: SkyItem }>;
       this.renderPicks(rows.map(row => ({ item: row.item, alt: row.entry.altitude, az: row.entry.azimuth })), t(`sky.eunoia.top · ${rows.length} 个目标`, `sky.eunoia.top · ${rows.length} targets`));

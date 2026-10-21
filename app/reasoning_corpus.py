@@ -120,7 +120,7 @@ def _object_insight(item: Dict[str, Any], corpus: Dict[str, Any]) -> Dict[str, A
         "fact": fact.get("fact") or "",
         "viewing_tip": fact.get("tip") or _generic_tip(item, corpus),
         "altitude_note": _altitude_note(item, corpus),
-        "magnitude_note": _magnitude_note(item, corpus) if category != "planet" else "",
+        "magnitude_note": _magnitude_note(item, corpus) if category not in ("planet", "sun", "moon") else "",
     }
 
 
@@ -129,7 +129,10 @@ def build_reasoning_context(chart: Dict[str, Any], corpus_path: str = str(DEFAUL
     objects = list(chart.get("objects") or [])
     counts = chart.get("counts") or {}
     observer = chart.get("observer") or {}
-    top_objects = objects[:5]
+    # The Sun is listed when it is up, but it is never something to recommend looking at.
+    sun_up = [item for item in objects if item.get("category") == "sun"]
+    candidates = [item for item in objects if item.get("category") != "sun"]
+    top_objects = candidates[:5]
     high_objects = [item for item in objects if float(item.get("altitude_deg") or 0.0) >= 55.0]
     low_objects = [item for item in objects if 0.0 <= float(item.get("altitude_deg") or 0.0) < 25.0]
     planets = [item for item in objects if item.get("category") == "planet"]
@@ -158,9 +161,12 @@ def build_reasoning_context(chart: Dict[str, Any], corpus_path: str = str(DEFAUL
     ]
 
     bullets: List[str] = []
-    bullets.append(
-        f"类别分布：亮星 {counts.get('star', 0)} 个，行星 {counts.get('planet', 0)} 个，深空目标 {counts.get('deep_sky', 0)} 个。"
-    )
+    distribution = f"类别分布：亮星 {counts.get('star', 0)} 个，行星 {counts.get('planet', 0)} 个，深空目标 {counts.get('deep_sky', 0)} 个"
+    if counts.get("moon"):
+        distribution += "，月亮在地平线以上"
+    bullets.append(distribution + "。")
+    if sun_up:
+        bullets.append("太阳在地平线以上，现在是白天：严禁直视太阳或用任何未加专业滤光片的器材指向太阳，其余目标需等天黑后观测。")
     if high_objects:
         bullets.append(f"有 {len(high_objects)} 个目标高度角超过55度，可作为更稳定的首选观测对象。")
     if low_objects:

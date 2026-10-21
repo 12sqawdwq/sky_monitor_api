@@ -118,8 +118,10 @@ npm run build   # 产物在 atlas/dist/
 
 功能概览：
 
-- 根据 GPS 坐标计算地平坐标系下的高度角和方位角。默认筛选高度角 ≥ 15°、亮度适合展示的目标。
-- 恒星来自 HYG Database，行星位置用 Skyfield + JPL DE421 计算，另有常见 Messier/NGC 深空天体清单。
+- 根据 GPS 坐标和时间计算地平坐标系下的高度角和方位角，默认返回地平线以上（≥ 0°）的目标，最多 100 个（`total_limit` 可到 300）。
+- 恒星来自 HYG Database；深空天体为完整梅西耶目录 M1–M110 加 5 个著名 NGC/Melotte 目标；太阳、月亮和七大行星用 Skyfield + JPL DE421 计算，含星等。
+- 先按 `star_max_mag`、`deep_sky_max_mag`、`min_altitude_deg` 筛选，再按亮度统一排序后截取，各类别没有固定数量。
+- `category` 取值：`star`、`deep_sky`、`planet`、`sun`、`moon`（日月的 `object_type` 分别为 `sun`、`moon`），完整说明见[开发者手册](https://sky.eunoia.top/wiki#response)。
 - `/sky/chart` 返回 `chart_x`、`chart_y`、`chart_radius`，前端可以直接绘制极坐标星图。可以用 `time_utc` 指定观测时间。
 - `reasoning_context` 提供中文观测建议和目标解释，便于 LLM 工具调用。
 - OpenAPI 的 `servers` 可以通过环境变量配置，适合接入灵珠等只接受 HTTPS 域名的工具平台。
@@ -128,7 +130,7 @@ npm run build   # 产物在 atlas/dist/
 
 ```bash
 curl "https://sky.eunoia.top/health"
-# {"status": "ok", "version": "0.3.1", "catalog_db_exists": true}
+# {"status": "ok", "version": "0.4.0", "catalog_db_exists": true}
 ```
 
 ### 生成星图
@@ -141,10 +143,10 @@ curl -X POST "https://sky.eunoia.top/sky/chart" \
   -d '{
     "latitude": 31.4591,
     "longitude": 121.1298,
-    "min_altitude_deg": 15,
-    "max_magnitude": 3,
+    "min_altitude_deg": 0,
+    "star_max_mag": 3,
     "deep_sky_max_mag": 9,
-    "total_limit": 28
+    "total_limit": 100
   }'
 ```
 
@@ -156,7 +158,7 @@ curl -X POST "https://sky.eunoia.top/sky/chart" \
     "observer": { "lat": 31.4591, "lon": 121.1298 },
     "time_utc": "2026-05-17T03:00:00Z",
     "coordinate_system": { "chart_projection": "polar_azimuthal_horizon" },
-    "counts": { "star": 7, "planet": 1 },
+    "counts": { "star": 69, "deep_sky": 28, "planet": 2, "moon": 1 },
     "objects": [
       {
         "category": "star",
@@ -242,3 +244,4 @@ cd atlas && npm run build   # 前端：TypeScript 类型检查 + 构建
 | JPL DE421 | 公有领域 | 不提交，脚本下载 |
 | d3-celestial 星座 / 中国星官数据 | BSD-3-Clause | `atlas/public/data/constellations.json`、`mansions.json`，附 `CONSTELLATIONS-LICENSE.txt` |
 | GeoNames cities1000 | CC BY 4.0 | 不提交，脚本生成 |
+| OpenNGC（梅西耶目录坐标核对与取值） | CC BY-SA 4.0 | 坐标写入 `app/deep_sky.py` |

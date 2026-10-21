@@ -9,7 +9,14 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field, model_validator
 
-from app.astronomy import build_answer_facts, build_sky_chart, build_spoken_answer
+from app.astronomy import (
+    CHART_LIMIT_DEFAULT,
+    CHART_LIMIT_MAX,
+    CHART_LIMIT_MIN,
+    build_answer_facts,
+    build_sky_chart,
+    build_spoken_answer,
+)
 from app.catalog_query import get_bright_stars, get_catalog_stats, get_star_by_name
 from app.db import database_exists
 from app.reasoning_corpus import load_reasoning_corpus
@@ -19,7 +26,7 @@ PUBLIC_BASE_URL = os.getenv("SKY_PUBLIC_BASE_URL", "https://sky.eunoia.top").rst
 
 app = FastAPI(
     title="Rokid Sky Assistant",
-    version="0.3.1",
+    version="0.4.0",
     description="Local astronomy catalog backend for GPS-based sky charts, facts, and voice Q&A.",
     servers=[
         {
@@ -74,8 +81,8 @@ class SkyChartRequest(CoordinateRequest):
     time_utc: Optional[datetime] = None
     star_max_mag: float = Field(default=3.0, le=6.0)
     deep_sky_max_mag: float = Field(default=9.0, ge=0.0, le=12.0)
-    min_altitude_deg: float = Field(default=15.0, ge=0.0, le=90.0)
-    total_limit: int = Field(default=28, ge=8, le=60)
+    min_altitude_deg: float = Field(default=0.0, ge=0.0, le=90.0)
+    total_limit: int = Field(default=CHART_LIMIT_DEFAULT, ge=CHART_LIMIT_MIN, le=CHART_LIMIT_MAX)
     include_planets: bool = True
     include_deep_sky: bool = True
 
@@ -132,10 +139,10 @@ def wiki(request: Request) -> HTMLResponse:
     example_body = """{
   "latitude": 31.2304,
   "longitude": 121.4737,
-  "min_altitude_deg": 15,
+  "min_altitude_deg": 0,
   "max_magnitude": 3,
   "deep_sky_max_mag": 9,
-  "total_limit": 28
+  "total_limit": 100
 }"""
     html = f"""<!doctype html>
 <html lang="zh-CN">
@@ -250,10 +257,10 @@ def wiki(request: Request) -> HTMLResponse:
       <tr><td><code>latitude</code></td><td>是</td><td>GPS 纬度，范围 -90 到 90。也兼容 <code>lat</code>。</td></tr>
       <tr><td><code>longitude</code></td><td>是</td><td>GPS 经度，范围 -180 到 180。也兼容 <code>lon</code>。</td></tr>
       <tr><td><code>time_utc</code></td><td>否</td><td>UTC 时间，例如 <code>2026-05-16T03:15:00Z</code>。不传则使用当前时间。</td></tr>
-      <tr><td><code>min_altitude_deg</code></td><td>否</td><td>恒星和深空天体最低高度角，默认 15。</td></tr>
+      <tr><td><code>min_altitude_deg</code></td><td>否</td><td>所有目标（含太阳、月亮和行星）的最低高度角，默认 0。</td></tr>
       <tr><td><code>max_magnitude</code></td><td>否</td><td>恒星亮度阈值，默认 3。也兼容 <code>star_max_mag</code>。</td></tr>
-      <tr><td><code>deep_sky_max_mag</code></td><td>否</td><td>深空天体亮度阈值，默认 9，知名星团星云星系会放宽。</td></tr>
-      <tr><td><code>total_limit</code></td><td>否</td><td>返回目标数量，默认 28，范围 8 到 60。</td></tr>
+      <tr><td><code>deep_sky_max_mag</code></td><td>否</td><td>深空天体亮度阈值，默认 9。</td></tr>
+      <tr><td><code>total_limit</code></td><td>否</td><td>返回目标数量上限，默认 100，范围 8 到 300；符合条件的目标不足时按实际数量返回。</td></tr>
     </tbody>
   </table>
 
@@ -264,7 +271,7 @@ def wiki(request: Request) -> HTMLResponse:
     "time_utc": "2026-05-16T03:15:27Z",
     "coordinate_system": {{ "...": "..." }},
     "constraints": {{ "...": "..." }},
-    "counts": {{"star": 12, "planet": 4, "deep_sky": 6}},
+    "counts": {{"star": 80, "deep_sky": 14, "planet": 3, "moon": 1}},
     "objects": [
       {{
         "category": "star",
@@ -276,7 +283,7 @@ def wiki(request: Request) -> HTMLResponse:
         "chart_x": 0.2694,
         "chart_y": 0.2155,
         "chart_radius": 0.345,
-        "selection_reason": "bright_star_mag_lte_3_alt_gte_15"
+        "selection_reason": "bright_star_mag_lte_3_alt_gte_0"
       }}
     ]
   }}
@@ -284,6 +291,9 @@ def wiki(request: Request) -> HTMLResponse:
 
   <h2>GET 调试方式</h2>
   <pre><code>curl "{base_url}/sky/chart?lat=31.2304&amp;lon=121.4737&amp;total_limit=8"</code></pre>
+
+  <h2>目标类别</h2>
+  <p><code>category</code> 取值：<code>star</code>、<code>deep_sky</code>、<code>planet</code>、<code>sun</code>、<code>moon</code>。太阳的 <code>object_type</code> 为 <code>sun</code>，月亮为 <code>moon</code>；它们和行星一样由 <code>include_planets</code> 控制。</p>
 
   <h2>接口文档</h2>
   <p>OpenAPI 调试页：<a href="{base_url}/docs">{base_url}/docs</a></p>
@@ -312,8 +322,8 @@ def sky_chart_get(
     time_utc: Optional[datetime] = None,
     star_max_mag: float = Query(default=3.0, le=6.0),
     deep_sky_max_mag: float = Query(default=9.0, ge=0.0, le=12.0),
-    min_altitude_deg: float = Query(default=15.0, ge=0.0, le=90.0),
-    total_limit: int = Query(default=28, ge=8, le=60),
+    min_altitude_deg: float = Query(default=0.0, ge=0.0, le=90.0),
+    total_limit: int = Query(default=CHART_LIMIT_DEFAULT, ge=CHART_LIMIT_MIN, le=CHART_LIMIT_MAX),
     include_planets: bool = True,
     include_deep_sky: bool = True,
 ) -> Dict[str, Any]:

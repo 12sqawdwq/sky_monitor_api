@@ -182,7 +182,8 @@ def normalize_row(
         return None
 
     distance_pc = _float_or_none(row.get("dist"))
-    if distance_pc is not None and distance_pc <= 0:
+    # HYG uses 100000 pc as a "no reliable parallax" placeholder.
+    if distance_pc is not None and (distance_pc <= 0 or distance_pc >= 100000):
         distance_pc = None
     distance_ly = distance_pc * 3.26156 if distance_pc is not None else None
     name_en = _name_from_row(row)

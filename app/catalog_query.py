@@ -8,8 +8,10 @@ from app.db import query_all, query_one, resolve_db_path
 
 PathLike = Union[str, Path]
 
+# HYG stores 100000 pc for stars without a usable parallax; that is a placeholder, not a distance.
+PLACEHOLDER_DISTANCE_PC = 100000.0
 
-STAR_COLUMNS = """
+STAR_COLUMNS = f"""
     id,
     hyg_id,
     hip,
@@ -24,8 +26,8 @@ STAR_COLUMNS = """
     ra_deg,
     dec_deg,
     magnitude,
-    distance_pc,
-    distance_ly,
+    CASE WHEN distance_pc >= {PLACEHOLDER_DISTANCE_PC} THEN NULL ELSE distance_pc END AS distance_pc,
+    CASE WHEN distance_pc >= {PLACEHOLDER_DISTANCE_PC} THEN NULL ELSE distance_ly END AS distance_ly,
     spectral_type,
     color_index,
     constellation,
@@ -35,6 +37,7 @@ STAR_COLUMNS = """
 
 
 _CANDIDATE_CACHE: Dict[Tuple[str, int, int, float], List[Dict[str, Any]]] = {}
+_DUPLICATE_CACHE: Dict[Tuple[str, int, int], Dict[str, Any]] = {}
 
 
 def _bounded_limit(limit: int, default: int, maximum: int) -> int:
@@ -140,8 +143,35 @@ def get_candidate_stars_for_sky(
     return rows
 
 
+def get_duplicate_star_names(db_path: Optional[PathLike] = None) -> Dict[str, Any]:
+    """English names shared by more than one star, mapped to the hyg_id of the brightest one."""
+    path = resolve_db_path(db_path)
+    stat = path.stat()
+    cache_key = (str(path.resolve()), stat.st_mtime_ns, stat.st_size)
+    cached = _DUPLICATE_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    rows = query_all(
+        """
+        SELECT name_en, hyg_id
+        FROM stars
+        WHERE name_en IN (SELECT name_en FROM stars GROUP BY name_en HAVING count(*) > 1)
+        ORDER BY name_en ASC, magnitude ASC, hyg_id ASC
+        """,
+        db_path=path,
+    )
+    keepers: Dict[str, Any] = {}
+    for row in rows:
+        keepers.setdefault(row["name_en"], row["hyg_id"])
+    _DUPLICATE_CACHE.clear()
+    _DUPLICATE_CACHE[cache_key] = keepers
+    return keepers
+
+
 def clear_catalog_cache() -> None:
     _CANDIDATE_CACHE.clear()
+    _DUPLICATE_CACHE.clear()
 
 
 def get_catalog_stats(db_path: Optional[PathLike] = None) -> Dict[str, Any]:
@@ -152,10 +182,11 @@ def get_catalog_stats(db_path: Optional[PathLike] = None) -> Dict[str, Any]:
             count(*) AS total_stars,
             min(magnitude) AS brightest_magnitude,
             max(magnitude) AS dimmest_magnitude,
-            min(distance_ly) AS nearest_distance_ly,
-            max(distance_ly) AS farthest_distance_ly
+            min(CASE WHEN distance_pc < ? THEN distance_ly END) AS nearest_distance_ly,
+            max(CASE WHEN distance_pc < ? THEN distance_ly END) AS farthest_distance_ly
         FROM stars
         """,
+        (PLACEHOLDER_DISTANCE_PC, PLACEHOLDER_DISTANCE_PC),
         db_path=path,
     )
     if stats is None:

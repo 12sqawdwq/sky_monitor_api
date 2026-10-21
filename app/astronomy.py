@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from app.catalog_query import get_candidate_stars_for_sky
+from app.catalog_query import get_candidate_stars_for_sky, get_duplicate_star_names
 from app.deep_sky import get_deep_sky_objects
 from app.reasoning_corpus import build_reasoning_context
 
@@ -232,29 +232,48 @@ def _star_display_name(star: Dict[str, Any]) -> str:
     )
 
 
-def visible_stars(
+def _star_name_en(star: Dict[str, Any]) -> str:
+    return star.get("name_en") or star.get("proper_name") or _star_display_name(star)
+
+
+def _star_id(star: Dict[str, Any], duplicated: Dict[str, Any]) -> str:
+    """Chart ID of a star: its English name, as before.
+
+    A handful of HYG names are shared by two stars; the brightest keeps the plain name and the
+    others get their HIP (or HYG) number appended so IDs stay unique within a response.
+    """
+    name = _star_name_en(star)
+    keeper = duplicated.get(name)
+    if keeper is None or keeper == star.get("hyg_id"):
+        return name
+    if star.get("hip"):
+        return f"{name} (HIP {star['hip']})"
+    return f"{name} (HYG {star.get('hyg_id')})"
+
+
+def _visible_star_rows(
     lat: float,
     lon: float,
-    observed_at: Optional[DateTimeLike] = None,
-    max_mag: float = 6.0,
-    min_altitude_deg: float = 10.0,
-    limit: int = 10,
+    moment: datetime,
+    max_mag: float,
+    min_altitude_deg: float,
     db_path: Optional[PathLike] = None,
 ) -> List[Dict[str, Any]]:
-    latitude, longitude = validate_location(lat, lon)
-    moment = ensure_utc(observed_at)
+    """Every catalogue star at or brighter than max_mag and at or above min_altitude_deg."""
     candidates = get_candidate_stars_for_sky(max_mag=max_mag, db_path=db_path)
+    duplicated = get_duplicate_star_names(db_path=db_path)
+    altaz_values = _bulk_altaz_from_stars(candidates, lat, lon, moment) if candidates else []
     visible: List[Dict[str, Any]] = []
-    altaz_values = _bulk_altaz_from_stars(candidates, latitude, longitude, moment)
 
     for star, (azimuth, altitude) in zip(candidates, altaz_values):
         magnitude = float(star["magnitude"])
-        if altitude <= min_altitude_deg or magnitude > max_mag:
+        if altitude < min_altitude_deg or magnitude > max_mag:
             continue
 
         visible.append(
             {
-                "name_en": star.get("name_en") or star.get("proper_name") or _star_display_name(star),
+                "id": _star_id(star, duplicated),
+                "name_en": _star_name_en(star),
                 "name_zh": star.get("name_zh"),
                 "ra_deg": round(float(star["ra_deg"]), 6),
                 "dec_deg": round(float(star["dec_deg"]), 6),
@@ -270,7 +289,25 @@ def visible_stars(
             }
         )
 
-    visible.sort(key=lambda item: (-item["altitude_deg"], item["magnitude"]))
+    # Brightness first; altitude only breaks ties.
+    visible.sort(key=lambda item: (item["magnitude"], -item["altitude_deg"]))
+    return visible
+
+
+def visible_stars(
+    lat: float,
+    lon: float,
+    observed_at: Optional[DateTimeLike] = None,
+    max_mag: float = 6.0,
+    min_altitude_deg: float = 10.0,
+    limit: int = 10,
+    db_path: Optional[PathLike] = None,
+) -> List[Dict[str, Any]]:
+    latitude, longitude = validate_location(lat, lon)
+    moment = ensure_utc(observed_at)
+    visible = _visible_star_rows(latitude, longitude, moment, max_mag, min_altitude_deg, db_path)
+    for item in visible:
+        item.pop("id", None)
     return visible[: max(1, min(int(limit), 20))]
 
 
@@ -280,8 +317,12 @@ def visible_deep_sky_objects(
     observed_at: Optional[DateTimeLike] = None,
     max_mag: float = 9.0,
     min_altitude_deg: float = 15.0,
-    limit: int = 12,
+    limit: Optional[int] = 12,
 ) -> List[Dict[str, Any]]:
+    """Catalogue deep-sky objects at or brighter than max_mag and at or above min_altitude_deg.
+
+    `limit=None` returns every match.
+    """
     latitude, longitude = validate_location(lat, lon)
     moment = ensure_utc(observed_at)
     candidates = get_deep_sky_objects()
@@ -290,10 +331,7 @@ def visible_deep_sky_objects(
 
     for item, (azimuth, altitude) in zip(candidates, altaz_values):
         magnitude = float(item["magnitude"])
-        is_famous = int(item.get("importance", 3)) <= 2
-        if altitude < min_altitude_deg:
-            continue
-        if magnitude > max_mag and not is_famous:
+        if altitude < min_altitude_deg or magnitude > max_mag:
             continue
 
         visible.append(
@@ -313,7 +351,102 @@ def visible_deep_sky_objects(
         )
 
     visible.sort(key=lambda item: (item["importance"], item["magnitude"], -item["altitude_deg"]))
-    return visible[: max(1, min(int(limit), 30))]
+    return visible if limit is None else visible[: max(1, int(limit))]
+
+
+# Ephemeris key, chart label (also the object's ID), category, object_type.
+SOLAR_SYSTEM_BODIES: List[Tuple[str, str, str, str]] = [
+    ("sun", "Sun / 太阳", "sun", "sun"),
+    ("moon", "Moon / 月亮", "moon", "moon"),
+    ("mercury", "Mercury / 水星", "planet", "planet"),
+    ("venus", "Venus / 金星", "planet", "planet"),
+    ("mars", "Mars / 火星", "planet", "planet"),
+    ("jupiter barycenter", "Jupiter / 木星", "planet", "planet"),
+    ("saturn barycenter", "Saturn / 土星", "planet", "planet"),
+    ("uranus barycenter", "Uranus / 天王星", "planet", "planet"),
+    ("neptune barycenter", "Neptune / 海王星", "planet", "planet"),
+]
+SUN_MAGNITUDE = -26.74
+
+
+def _load_skyfield() -> Optional[Tuple[Any, Any]]:
+    global _SKYFIELD_EPHEMERIS, _SKYFIELD_TIMESCALE
+    ephemeris_path = DATA_DIR / "de421.bsp"
+    if not ephemeris_path.exists():
+        return None
+    from skyfield.api import load, load_file
+
+    if _SKYFIELD_TIMESCALE is None:
+        _SKYFIELD_TIMESCALE = load.timescale()
+    if _SKYFIELD_EPHEMERIS is None:
+        _SKYFIELD_EPHEMERIS = load_file(str(ephemeris_path))
+    return _SKYFIELD_EPHEMERIS, _SKYFIELD_TIMESCALE
+
+
+def _moon_magnitude(phase_angle_deg: float) -> float:
+    # Allen's approximation for the full-disc visual magnitude of the Moon.
+    angle = abs(phase_angle_deg)
+    return -12.73 + 0.026 * angle + 4.0e-9 * angle**4
+
+
+def solar_system_positions(
+    lat: float,
+    lon: float,
+    observed_at: Optional[DateTimeLike] = None,
+) -> List[Dict[str, Any]]:
+    """Sun, Moon and the seven planets as seen from (lat, lon) at observed_at, via DE421.
+
+    Altitude and azimuth are apparent (aberration and light time included); ra_deg / dec_deg are
+    astrometric ICRS, like the catalogue stars.
+    """
+    try:
+        loaded = _load_skyfield()
+        if loaded is None:
+            return []
+        from skyfield.api import wgs84
+        from skyfield.magnitudelib import planetary_magnitude
+
+        ephemeris, timescale = loaded
+        moment = ensure_utc(observed_at)
+        skyfield_time = timescale.from_datetime(moment)
+        earth = ephemeris["earth"]
+        observer = (earth + wgs84.latlon(latitude_degrees=lat, longitude_degrees=lon)).at(skyfield_time)
+        geocentre = earth.at(skyfield_time)
+        sun = ephemeris["sun"]
+        results = []
+        for key, label, category, object_type in SOLAR_SYSTEM_BODIES:
+            body = ephemeris[key]
+            astrometric = observer.observe(body)
+            apparent = astrometric.apparent()
+            altitude, azimuth, distance = apparent.altaz()
+            ra, dec, _ = astrometric.radec()
+            if key == "sun":
+                magnitude: Optional[float] = SUN_MAGNITUDE
+            elif key == "moon":
+                magnitude = _moon_magnitude(float(apparent.phase_angle(sun).degrees))
+            else:
+                try:
+                    magnitude = float(planetary_magnitude(geocentre.observe(body)))
+                except Exception:
+                    magnitude = None
+                if magnitude is not None and not math.isfinite(magnitude):
+                    magnitude = None
+            results.append(
+                {
+                    "name": label,
+                    "category": category,
+                    "object_type": object_type,
+                    "ra_deg": round(float(ra._degrees) % 360.0, 6),
+                    "dec_deg": round(float(dec.degrees), 6),
+                    "azimuth_deg": round(float(azimuth.degrees), 2),
+                    "altitude_deg": round(float(altitude.degrees), 2),
+                    "distance_au": round(float(distance.au), 6 if key == "moon" else 4),
+                    "magnitude": round(magnitude, 2) if magnitude is not None else None,
+                }
+            )
+        return results
+    except Exception:
+        return []
 
 
 def planet_positions(
@@ -321,44 +454,17 @@ def planet_positions(
     lon: float,
     observed_at: Optional[DateTimeLike] = None,
 ) -> List[Dict[str, Any]]:
-    ephemeris_path = DATA_DIR / "de421.bsp"
-    if not ephemeris_path.exists():
-        return []
-
-    try:
-        from skyfield.api import load, load_file, wgs84
-
-        global _SKYFIELD_EPHEMERIS, _SKYFIELD_TIMESCALE
-        moment = ensure_utc(observed_at)
-        if _SKYFIELD_TIMESCALE is None:
-            _SKYFIELD_TIMESCALE = load.timescale()
-        if _SKYFIELD_EPHEMERIS is None:
-            _SKYFIELD_EPHEMERIS = load_file(str(ephemeris_path))
-        skyfield_time = _SKYFIELD_TIMESCALE.from_datetime(moment)
-        ephemeris = _SKYFIELD_EPHEMERIS
-        observer = ephemeris["earth"] + wgs84.latlon(latitude_degrees=lat, longitude_degrees=lon)
-        bodies = [
-            ("mercury", "Mercury / 水星"),
-            ("venus", "Venus / 金星"),
-            ("mars", "Mars / 火星"),
-            ("jupiter barycenter", "Jupiter / 木星"),
-            ("saturn barycenter", "Saturn / 土星"),
-        ]
-        results = []
-        for key, label in bodies:
-            apparent = observer.at(skyfield_time).observe(ephemeris[key]).apparent()
-            altitude, azimuth, distance = apparent.altaz()
-            results.append(
-                {
-                    "name": label,
-                    "azimuth_deg": round(float(azimuth.degrees), 2),
-                    "altitude_deg": round(float(altitude.degrees), 2),
-                    "distance_au": round(float(distance.au), 4),
-                }
-            )
-        return results
-    except Exception:
-        return []
+    """Planets only, in the original /sky/facts shape."""
+    return [
+        {
+            "name": body["name"],
+            "azimuth_deg": body["azimuth_deg"],
+            "altitude_deg": body["altitude_deg"],
+            "distance_au": body["distance_au"],
+        }
+        for body in solar_system_positions(lat, lon, observed_at)
+        if body["category"] == "planet"
+    ]
 
 
 def _chart_position(azimuth_deg: float, altitude_deg: float) -> Dict[str, float]:
@@ -372,24 +478,34 @@ def _chart_position(azimuth_deg: float, altitude_deg: float) -> Dict[str, float]
     }
 
 
+# label_priority: lower is shown first. Brightness dominates; altitude adds at most 0.5.
+def _altitude_term(item: Dict[str, Any]) -> float:
+    return (90.0 - float(item.get("altitude_deg", 0.0))) / 180.0
+
+
 def _star_label_priority(star: Dict[str, Any]) -> float:
-    magnitude = float(star.get("magnitude", 6.0))
-    altitude = float(star.get("altitude_deg", 0.0))
-    named_bonus = 0.0 if not str(star.get("name_en", "")).startswith(("HIP ", "HD ", "HYG ")) else 1.2
-    return round(magnitude + named_bonus + (90.0 - altitude) / 180.0, 4)
+    return round(float(star.get("magnitude", 6.0)) + _altitude_term(star), 4)
 
 
 def _deep_sky_label_priority(item: Dict[str, Any]) -> float:
+    # Extended objects look fainter than a star of the same magnitude, so they sit after the
+    # bright stars; showpieces (importance 1) still rank among the 2nd-3rd magnitude stars.
     importance = float(item.get("importance", 3))
     magnitude = float(item.get("magnitude", 9.0))
-    altitude = float(item.get("altitude_deg", 0.0))
-    return round(2.5 + importance + magnitude / 3.0 + (90.0 - altitude) / 180.0, 4)
+    return round(1.0 + importance + magnitude / 3.0 + _altitude_term(item), 4)
 
 
-def _planet_label_priority(item: Dict[str, Any]) -> float:
-    altitude = float(item.get("altitude_deg", 0.0))
-    altitude_penalty = 0.0 if altitude >= 15.0 else 1.5
-    return round(1.8 + altitude_penalty + (90.0 - altitude) / 180.0, 4)
+def _solar_system_label_priority(item: Dict[str, Any]) -> float:
+    if item.get("category") == "sun":
+        return round(-30.0 + _altitude_term(item), 4)
+    if item.get("category") == "moon":
+        return round(-20.0 + _altitude_term(item), 4)
+    magnitude = item.get("magnitude")
+    return round((float(magnitude) if magnitude is not None else 6.0) + _altitude_term(item), 4)
+
+
+def _format_threshold(value: float) -> str:
+    return f"{float(value):g}"
 
 
 def _as_chart_object(
@@ -431,78 +547,68 @@ def _as_chart_object(
     return chart_object
 
 
+CHART_LIMIT_MIN = 8
+CHART_LIMIT_MAX = 300
+CHART_LIMIT_DEFAULT = 100
+
+
 def build_sky_chart(
     lat: float,
     lon: float,
     observed_at: Optional[DateTimeLike] = None,
     star_max_mag: float = 3.0,
     deep_sky_max_mag: float = 9.0,
-    min_altitude_deg: float = 15.0,
-    total_limit: int = 28,
+    min_altitude_deg: float = 0.0,
+    total_limit: int = CHART_LIMIT_DEFAULT,
     include_planets: bool = True,
     include_deep_sky: bool = True,
     db_path: Optional[PathLike] = None,
 ) -> Dict[str, Any]:
     latitude, longitude = validate_location(lat, lon)
     moment = ensure_utc(observed_at)
-    limit = max(8, min(int(total_limit), 60))
+    limit = max(CHART_LIMIT_MIN, min(int(total_limit), CHART_LIMIT_MAX))
+    min_alt = float(min_altitude_deg)
+    alt_text = _format_threshold(min_alt)
 
-    star_candidates = visible_stars(
-        lat=latitude,
-        lon=longitude,
-        observed_at=moment,
-        max_mag=star_max_mag,
-        min_altitude_deg=min_altitude_deg,
-        limit=20,
-        db_path=db_path,
-    )
-    star_candidates.sort(key=lambda item: (_star_label_priority(item), -item["altitude_deg"]))
-
+    # 1. Filter every category by its own thresholds; no per-category quotas.
     chart_objects: List[Dict[str, Any]] = []
-    for star in star_candidates[: min(14, limit)]:
+    star_reason = f"bright_star_mag_lte_{_format_threshold(star_max_mag)}_alt_gte_{alt_text}"
+    for star in _visible_star_rows(latitude, longitude, moment, star_max_mag, min_alt, db_path):
         chart_objects.append(
-            _as_chart_object(
-                star,
-                category="star",
-                label_priority=_star_label_priority(star),
-                selection_reason="bright_star_mag_lte_3_alt_gte_15",
-            )
+            _as_chart_object(star, category="star", label_priority=_star_label_priority(star), selection_reason=star_reason)
         )
 
     if include_deep_sky:
-        deep_sky_candidates = visible_deep_sky_objects(
+        deep_sky_reason = f"deep_sky_mag_lte_{_format_threshold(deep_sky_max_mag)}_alt_gte_{alt_text}"
+        for item in visible_deep_sky_objects(
             lat=latitude,
             lon=longitude,
             observed_at=moment,
             max_mag=deep_sky_max_mag,
-            min_altitude_deg=min_altitude_deg,
-            limit=24,
-        )
-        for item in deep_sky_candidates[:12]:
+            min_altitude_deg=min_alt,
+            limit=None,
+        ):
             chart_objects.append(
                 _as_chart_object(
-                    item,
-                    category="deep_sky",
-                    label_priority=_deep_sky_label_priority(item),
-                    selection_reason="famous_deep_sky_or_cluster_alt_gte_15",
+                    item, category="deep_sky", label_priority=_deep_sky_label_priority(item), selection_reason=deep_sky_reason
                 )
             )
 
     if include_planets:
-        planet_candidates = [
-            item for item in planet_positions(latitude, longitude, moment) if float(item["altitude_deg"]) >= 0.0
-        ]
-        planet_candidates.sort(key=lambda item: (-float(item["altitude_deg"]), item["name"]))
-        for planet in planet_candidates[:5]:
+        solar_reason = f"solar_system_alt_gte_{alt_text}"
+        for body in solar_system_positions(latitude, longitude, moment):
+            if float(body["altitude_deg"]) < min_alt:
+                continue
             chart_objects.append(
                 _as_chart_object(
-                    planet,
-                    category="planet",
-                    label_priority=_planet_label_priority(planet),
-                    selection_reason="solar_system_planet_above_horizon",
+                    body,
+                    category=body["category"],
+                    label_priority=_solar_system_label_priority(body),
+                    selection_reason=solar_reason,
                 )
             )
 
+    # 2. Rank everything together, 3. then cut to the requested total.
     chart_objects.sort(key=lambda item: (item["label_priority"], -item["altitude_deg"], item["display_name"]))
     chart_objects = chart_objects[:limit]
 
@@ -525,8 +631,8 @@ def build_sky_chart(
         "constraints": {
             "star_max_magnitude": star_max_mag,
             "deep_sky_max_magnitude": deep_sky_max_mag,
-            "min_altitude_deg_for_stars_and_deep_sky": min_altitude_deg,
-            "planet_min_altitude_deg": 0.0,
+            "min_altitude_deg_for_stars_and_deep_sky": min_alt,
+            "planet_min_altitude_deg": min_alt,
             "total_limit": limit,
         },
         "counts": counts,
