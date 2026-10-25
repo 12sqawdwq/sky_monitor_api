@@ -3,3 +3,5 @@ dist/
 .env
 .env.*
 !.env.production
+# Personal data (e.g. easter eggs) stays out of the public repository.
+*.local.json

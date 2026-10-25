@@ -1112,7 +1112,8 @@ export class SkyView {
     this.whereText.textContent = `${observerLabel(o)} · ${o.lat.toFixed(2)}°, ${o.lon.toFixed(2)}°`;
   }
 
-  private setObserver(observer: Observer): void {
+  /** Switch (and remember) the observer location. */
+  setObserver(observer: Observer): void {
     saveObserver(observer);
     this.options.onObserverChange(observer);
     (this.root.querySelector('.sky__locmenu') as HTMLElement).hidden = true;

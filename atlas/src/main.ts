@@ -10,6 +10,7 @@ import type { Vec3 } from './core/coords';
 import { formatDistance } from './core/units';
 import { buildCatalogObjects, frameLogR, type AtlasObject } from './data/objects';
 import { loadObserver } from './data/observer';
+import { EASTER_EGGS } from './data/easter-eggs';
 import { loadStarCatalog } from './data/stars';
 import { ConstellationLayer } from './layers/constellations';
 import { CosmicWebLayer, HorizonLayer } from './layers/cosmic';
@@ -63,7 +64,16 @@ const layers: Layer[] = [];
 const labels = new LabelLayer($('#labels'));
 const archive = new ArchivePanel($('#archive'), () => observer);
 const ladder = new ScaleLadder($('#ladder'));
-const search = new SearchBox($('#search'), () => objects);
+// Easter eggs (optional, from a git-ignored local file) are search entries that stand in for a
+// catalogue object, e.g. the Earth, with their own title and text.
+function eggObjects(): AtlasObject[] {
+  return EASTER_EGGS.flatMap(egg => {
+    const target = byId.get(egg.target);
+    if (!target) return [];
+    return [{ ...target, id: egg.id, zh: egg.zh, en: egg.en ?? egg.zh, nameEn: egg.en ?? egg.zh, subEn: undefined, des: egg.des, priority: 100 }];
+  });
+}
+const search = new SearchBox($('#search'), () => (EASTER_EGGS.length ? [...objects, ...eggObjects()] : objects));
 skyView = new SkyView(renderer, {
   stage,
   host: $('.atlas'),
@@ -133,7 +143,23 @@ archive.onClose = deselect;
 archive.onFly = object => void controls.flyTo(object.pos, frameLogR(object));
 archive.onSky = object => openSky(object);
 labels.onSelect = object => select(object);
-search.onSelect = object => select(object);
+search.onSelect = object => {
+  const egg = EASTER_EGGS.find(entry => entry.id === object.id);
+  const target = egg && byId.get(egg.target);
+  if (!egg || !target) {
+    select(object);
+    return;
+  }
+  if (egg.observer) skyView.setObserver({ ...egg.observer, source: 'manual' });
+  select({
+    ...target,
+    zh: egg.title.zh,
+    en: egg.title.en,
+    nameEn: egg.title.en,
+    subEn: undefined,
+    desc: egg.desc ? t(egg.desc.zh, egg.desc.en) : target.desc
+  });
+};
 
 controls.onClick = (x, y) => {
   const hit = labels.pick(x, y, frame, width, height);

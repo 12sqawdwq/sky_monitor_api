@@ -1,0 +1,12 @@
+[
+  {
+    "id": "example-easter-egg",
+    "zh": "示例彩蛋",
+    "en": "Example easter egg",
+    "des": "复制为 easter-eggs.local.json 后生效（该文件不提交到 Git）",
+    "observer": { "lat": 31.2304, "lon": 121.4737, "label": "上海" },
+    "target": "earth",
+    "title": { "zh": "示例 · 地球", "en": "Example · Earth" },
+    "desc": { "zh": "这里写彩蛋的说明。", "en": "Describe the easter egg here." }
+  }
+]
