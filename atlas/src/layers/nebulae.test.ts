@@ -32,6 +32,15 @@ describe('deep-sky models', () => {
     expect(totalAbsMag(members('M22'))).toBeCloseTo(-8.5, 2);
   });
 
+  it('gives every globular cluster the same light per particle, so they look alike', () => {
+    const perParticle = ['M13', 'NGC 5139', 'M22'].map(id => {
+      const points = members(id);
+      const count = points.reduce((n, p) => n + attr(p, 'absmag').count, 0);
+      return Math.pow(10, -0.4 * totalAbsMag(points)) / count;
+    });
+    for (const value of perParticle) expect(value / perParticle[0]).toBeCloseTo(1, 2);
+  });
+
   it('nearby clusters only add members fainter than the HYG completeness limit', () => {
     for (const id of ['Hyades', 'M45', 'M44', 'M7']) {
       const object = byId.get(id)!;

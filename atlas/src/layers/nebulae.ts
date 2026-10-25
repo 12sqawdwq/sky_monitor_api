@@ -24,6 +24,14 @@ const HYG_COMPLETE_MAG = 8;
 
 const distanceModulus = (ly: number) => 5 * Math.log10(ly / PC_LY) - 5;
 
+/**
+ * Light carried by one globular-cluster particle (luminosity of an absolute magnitude 0.75
+ * star). Giving every globular the same packet makes brighter clusters denser rather than
+ * sparkier, so ω Centauri, M13 and M22 read as the same kind of object.
+ */
+const GLOBULAR_PACKET_ABSMAG = 0.75;
+const globularCount = (totalAbsMag: number) => Math.round(Math.pow(10, -0.4 * (totalAbsMag - GLOBULAR_PACKET_ABSMAG)));
+
 const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const scale = (a: Vec3, k: number): Vec3 => [a[0] * k, a[1] * k, a[2] * k];
 const normalize = (v: Vec3): Vec3 => {
@@ -137,7 +145,8 @@ class Context {
   }
 
   /**
-   * Cluster members on a Plummer profile. With `totalAbsMag` the sample is scaled so the members
+   * Cluster members on a Plummer profile. `core` is the Plummer scale, which equals the
+   * projected half-light radius (for globulars: Harris catalogue r_h × distance). With `totalAbsMag` the sample is scaled so the members
    * add up to that integrated absolute magnitude; `hygCut` drops members bright enough to be
    * real catalogue stars already.
    */
@@ -264,18 +273,18 @@ const MODELS: Record<string, { seed: number; totalAbsMag?: number; build: (ctx: 
   M22: {
     seed: 21,
     totalAbsMag: -8.5,
-    build: ctx => ctx.cluster({ core: 6, tidal: 88, count: 5000, bright: -3.5, faint: 5, population: 'old', totalAbsMag: -8.5 })
+    build: ctx => ctx.cluster({ core: 10.4, tidal: 88, count: globularCount(-8.5), bright: -3.5, faint: 5, population: 'old', totalAbsMag: -8.5 })
   },
   'NGC 5139': {
     seed: 22,
     totalAbsMag: -10.3,
     // ω Centauri: ~10 million stars, slightly flattened; possibly the core of a captured dwarf galaxy.
-    build: ctx => ctx.cluster({ core: 15, tidal: 157, count: 8000, bright: -3.5, faint: 5, population: 'old', totalAbsMag: -10.3, flatten: 0.85 })
+    build: ctx => ctx.cluster({ core: 25, tidal: 157, count: globularCount(-10.3), bright: -3.5, faint: 5, population: 'old', totalAbsMag: -10.3, flatten: 0.85 })
   },
   M13: {
     seed: 23,
     totalAbsMag: -8.55,
-    build: ctx => ctx.cluster({ core: 6, tidal: 85, count: 5000, bright: -3.5, faint: 5, population: 'old', totalAbsMag: -8.55 })
+    build: ctx => ctx.cluster({ core: 10.9, tidal: 85, count: globularCount(-8.55), bright: -3.5, faint: 5, population: 'old', totalAbsMag: -8.55 })
   },
   // ---------------------------------------------------------------- emission nebulae
   M42: {

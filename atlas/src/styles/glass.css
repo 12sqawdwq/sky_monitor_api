@@ -7,15 +7,19 @@
 
 :root {
   /* Materials, thickest to thinnest. */
-  --glass-thick: rgba(28, 24, 20, 0.62);
-  --glass: rgba(30, 26, 22, 0.46);
-  --glass-thin: rgba(36, 31, 26, 0.32);
-  --glass-blur: blur(28px) saturate(175%) brightness(1.06);
-  --glass-blur-thin: blur(18px) saturate(160%);
-  /* Hairline edge plus a faint highlight along the top, as light catches the rim. */
-  --glass-edge: rgba(255, 244, 228, 0.13);
-  --glass-edge-strong: rgba(255, 244, 228, 0.22);
-  --glass-rim: inset 0 1px 0 rgba(255, 248, 236, 0.09), inset 0 0 0 0.5px rgba(255, 244, 228, 0.06);
+  --glass-thick: rgba(26, 22, 18, 0.48);
+  --glass: rgba(30, 26, 22, 0.3);
+  --glass-thin: rgba(40, 34, 28, 0.24);
+  /* Over a near-black sky the blur alone is invisible: brighten and saturate what is behind,
+     so stars, the Milky Way and nebulae bloom into a soft glow through the pane. */
+  --glass-blur: blur(40px) saturate(210%) brightness(1.35);
+  --glass-blur-thin: blur(24px) saturate(190%) brightness(1.25);
+  /* Light falling on the pane from the top left. */
+  --glass-sheen: linear-gradient(140deg, rgba(255, 250, 240, 0.16) 0%, rgba(255, 250, 240, 0.05) 28%, rgba(255, 250, 240, 0) 55%, rgba(255, 240, 220, 0.04) 100%);
+  /* Hairline edge plus a bright highlight along the top, as light catches the rim. */
+  --glass-edge: rgba(255, 244, 228, 0.2);
+  --glass-edge-strong: rgba(255, 244, 228, 0.32);
+  --glass-rim: inset 0 1px 0 rgba(255, 250, 240, 0.24), inset 0 -1px 0 rgba(255, 250, 240, 0.04), inset 0 0 0 0.5px rgba(255, 244, 228, 0.08);
   --glass-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.7), 0 6px 18px -6px rgba(0, 0, 0, 0.45);
   --glass-shadow-soft: 0 12px 32px -14px rgba(0, 0, 0, 0.65);
   /* Fills for controls sitting on glass. */
@@ -41,7 +45,7 @@
 .search__results,
 .services__menu,
 .intro__inner {
-  background: var(--glass);
+  background: var(--glass-sheen), var(--glass);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 0.5px solid var(--glass-edge);
@@ -57,7 +61,7 @@
 .topbar .btn--ghost,
 .topbar .chip,
 .topbar .services > summary {
-  background: var(--glass-thin);
+  background: var(--glass-sheen), var(--glass-thin);
   -webkit-backdrop-filter: var(--glass-blur-thin);
   backdrop-filter: var(--glass-blur-thin);
   border: 0.5px solid var(--glass-edge);
@@ -124,7 +128,7 @@
   border-radius: 999px;
   transition: background 0.3s var(--ease-apple-out), border-color 0.3s var(--ease-apple-out), box-shadow 0.3s var(--ease-apple-out);
 }
-.search input:focus { background: var(--glass); border-color: rgba(217, 163, 91, 0.55); box-shadow: var(--glass-rim), 0 0 0 4px rgba(217, 163, 91, 0.12), var(--glass-shadow-soft); }
+.search input:focus { background: var(--glass-sheen), var(--glass); border-color: rgba(217, 163, 91, 0.55); box-shadow: var(--glass-rim), 0 0 0 4px rgba(217, 163, 91, 0.12), var(--glass-shadow-soft); }
 .search__kbd { right: 12px; border-radius: 6px; border-color: var(--glass-edge); font-family: var(--ui); }
 
 .search__results {
@@ -153,7 +157,7 @@
 }
 .services__item { border-radius: 10px; transition: background 0.18s var(--ease-apple-out); }
 .services__item:hover, .services__item:focus-visible { background: var(--fill-hover); }
-.services__group { font-family: var(--ui); font-weight: 600; letter-spacing: 0.08em; }
+.services__group { font-family: var(--ui); font-weight: 600; letter-spacing: 0.08em; color: var(--ink-muted); }
 .services[open] > summary { background: var(--fill-hover); }
 
 @keyframes glass-pop {
@@ -214,7 +218,7 @@
 .caption {
   padding: 16px 22px 14px;
   border-radius: var(--radius-card);
-  background: var(--glass);
+  background: var(--glass-sheen), var(--glass);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   border: 0.5px solid var(--glass-edge);
