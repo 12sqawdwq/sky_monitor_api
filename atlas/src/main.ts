@@ -3,6 +3,7 @@ import '@fontsource/noto-serif-sc/400.css';
 import '@fontsource/noto-serif-sc/600.css';
 import './styles/atlas.css';
 import './styles/sky.css';
+import './styles/glass.css';
 
 import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { AtlasControls } from './core/controls';

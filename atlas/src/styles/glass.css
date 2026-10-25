@@ -1,0 +1,321 @@
+/*
+ * Glass materials and motion, after Apple's design language: translucent, saturated blur
+ * over the sky, hairline edges with a lit top, soft depth, continuous corners and
+ * spring-like easing. Loaded last; it restyles surfaces and motion, not layout.
+ * The palette stays warm (no blue/purple).
+ */
+
+:root {
+  /* Materials, thickest to thinnest. */
+  --glass-thick: rgba(28, 24, 20, 0.62);
+  --glass: rgba(30, 26, 22, 0.46);
+  --glass-thin: rgba(36, 31, 26, 0.32);
+  --glass-blur: blur(28px) saturate(175%) brightness(1.06);
+  --glass-blur-thin: blur(18px) saturate(160%);
+  /* Hairline edge plus a faint highlight along the top, as light catches the rim. */
+  --glass-edge: rgba(255, 244, 228, 0.13);
+  --glass-edge-strong: rgba(255, 244, 228, 0.22);
+  --glass-rim: inset 0 1px 0 rgba(255, 248, 236, 0.09), inset 0 0 0 0.5px rgba(255, 244, 228, 0.06);
+  --glass-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.7), 0 6px 18px -6px rgba(0, 0, 0, 0.45);
+  --glass-shadow-soft: 0 12px 32px -14px rgba(0, 0, 0, 0.65);
+  /* Fills for controls sitting on glass. */
+  --fill: rgba(255, 244, 228, 0.07);
+  --fill-hover: rgba(255, 244, 228, 0.12);
+  --fill-press: rgba(255, 244, 228, 0.16);
+  --fill-tint: rgba(217, 163, 91, 0.2);
+  --fill-tint-hover: rgba(217, 163, 91, 0.3);
+  --radius-panel: 22px;
+  --radius-card: 18px;
+  --radius-menu: 14px;
+  --radius-control: 11px;
+  /* iOS sheet / spring curves. */
+  --ease-apple: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-apple-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
+}
+
+/* ------------------------------------------------------------- materials */
+
+.archive,
+.sky__card,
+.search__results,
+.services__menu,
+.intro__inner {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 0.5px solid var(--glass-edge);
+  box-shadow: var(--glass-rim), var(--glass-shadow);
+}
+
+.search input,
+.sky__time,
+.sky-pick,
+.sky__locmenu .chip,
+.sky__tools .chip,
+.sky__tools .icon-btn,
+.topbar .btn--ghost,
+.topbar .chip,
+.topbar .services > summary {
+  background: var(--glass-thin);
+  -webkit-backdrop-filter: var(--glass-blur-thin);
+  backdrop-filter: var(--glass-blur-thin);
+  border: 0.5px solid var(--glass-edge);
+  box-shadow: var(--glass-rim), var(--glass-shadow-soft);
+}
+
+/* --------------------------------------------------------------- controls */
+
+.btn {
+  font-family: var(--ui);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  padding: 9px 18px;
+  border-radius: var(--radius-control);
+  border: 0.5px solid rgba(217, 163, 91, 0.45);
+  background: var(--fill-tint);
+  transition: background 0.25s var(--ease-apple-out), border-color 0.25s var(--ease-apple-out), color 0.25s var(--ease-apple-out),
+    transform 0.35s var(--ease-apple), box-shadow 0.25s var(--ease-apple-out);
+}
+.btn:hover:not(:disabled) { background: var(--fill-tint-hover); border-color: rgba(217, 163, 91, 0.7); }
+.btn--ghost { background: var(--fill); border-color: var(--glass-edge); color: var(--ink); }
+.btn--ghost:hover:not(:disabled) { background: var(--fill-hover); border-color: var(--glass-edge-strong); }
+.btn:active:not(:disabled),
+.chip:active,
+.icon-btn:active,
+.sky-pick:active,
+.sky__step:active,
+.ladder__stop:active .ladder__dot { transform: scale(0.96); transition-duration: 0.12s; }
+
+.chip {
+  font-family: var(--ui);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  color: var(--ink-dim);
+  transition: background 0.25s var(--ease-apple-out), border-color 0.25s var(--ease-apple-out), color 0.25s var(--ease-apple-out), transform 0.35s var(--ease-apple);
+}
+.chip:hover { color: var(--ink); background: var(--fill-hover); border-color: var(--glass-edge-strong); }
+.sky__tools .chip.is-on { background: var(--fill-tint); border-color: rgba(217, 163, 91, 0.5); color: var(--ink); }
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: var(--fill);
+  color: var(--ink-dim);
+  font-size: 17px;
+  transition: background 0.25s var(--ease-apple-out), color 0.25s var(--ease-apple-out), transform 0.35s var(--ease-apple);
+}
+.icon-btn:hover { background: var(--fill-hover); color: var(--ink); }
+
+.btn:focus-visible, .chip:focus-visible, .icon-btn:focus-visible, .ladder__stop:focus-visible, .sky-pick:focus-visible, .search__row:focus-visible {
+  outline: 2px solid rgba(217, 163, 91, 0.75);
+  outline-offset: 2px;
+}
+
+/* ----------------------------------------------------------------- search */
+
+.search input {
+  font-family: var(--ui);
+  font-size: 13.5px;
+  padding: 10px 36px 10px 16px;
+  border-radius: 999px;
+  transition: background 0.3s var(--ease-apple-out), border-color 0.3s var(--ease-apple-out), box-shadow 0.3s var(--ease-apple-out);
+}
+.search input:focus { background: var(--glass); border-color: rgba(217, 163, 91, 0.55); box-shadow: var(--glass-rim), 0 0 0 4px rgba(217, 163, 91, 0.12), var(--glass-shadow-soft); }
+.search__kbd { right: 12px; border-radius: 6px; border-color: var(--glass-edge); font-family: var(--ui); }
+
+.search__results {
+  top: calc(100% + 8px);
+  display: block;
+  padding: 6px;
+  border-radius: var(--radius-menu);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.97);
+  transform-origin: top center;
+  transition: opacity 0.2s var(--ease-apple-out), transform 0.35s var(--ease-apple), visibility 0s linear 0.35s;
+}
+.search.has-results .search__results { opacity: 1; visibility: visible; transform: none; transition: opacity 0.22s var(--ease-apple-out), transform 0.45s var(--ease-apple), visibility 0s; }
+.search__row { border: 0; border-radius: 9px; padding: 9px 12px; transition: background 0.18s var(--ease-apple-out); }
+.search__row.is-active, .search__row:hover { background: var(--fill-hover); }
+.search__meta { font-family: var(--ui); font-size: 11px; }
+
+/* ---------------------------------------------------------------- services */
+
+.services__menu {
+  border-radius: var(--radius-menu);
+  padding: 6px;
+  transform-origin: top right;
+  animation: glass-pop 0.42s var(--ease-apple) both;
+}
+.services__item { border-radius: 10px; transition: background 0.18s var(--ease-apple-out); }
+.services__item:hover, .services__item:focus-visible { background: var(--fill-hover); }
+.services__group { font-family: var(--ui); font-weight: 600; letter-spacing: 0.08em; }
+.services[open] > summary { background: var(--fill-hover); }
+
+@keyframes glass-pop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.95); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ----------------------------------------------------------------- archive */
+
+.archive {
+  top: 76px;
+  bottom: 24px;
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+  background-clip: border-box;
+  transform: translateX(24px) scale(0.97);
+  transform-origin: right center;
+  filter: blur(6px);
+  transition: opacity 0.35s var(--ease-apple-out), transform 0.6s var(--ease-apple), filter 0.45s var(--ease-apple-out);
+}
+.archive::before { display: none; }
+.archive.is-open { transform: none; filter: none; }
+.archive__close { top: 16px; right: 16px; }
+.archive__body { padding: 28px 24px 28px; }
+.archive__head { border-bottom: 0.5px solid var(--glass-edge); }
+.archive__kind { font-family: var(--ui); font-weight: 600; letter-spacing: 0.14em; }
+.archive__en { font-family: var(--ui); font-size: 12px; }
+/* Grouped values, like an inset list. */
+.archive__stats {
+  margin: 18px 0 0;
+  padding: 2px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--fill);
+  box-shadow: inset 0 0 0 0.5px var(--glass-edge);
+}
+.stat { border-bottom: 0.5px solid var(--glass-edge); }
+.stat dt { font-family: var(--ui); font-size: 11px; letter-spacing: 0.02em; }
+.archive__facts { border-top: 0; border-radius: 14px; background: var(--fill); padding: 0 14px; box-shadow: inset 0 0 0 0.5px var(--glass-edge); }
+.archive__facts li { border-bottom: 0.5px solid var(--glass-edge); }
+.archive__facts li:last-child { border-bottom: 0; }
+.tonight-card { border: 0; border-radius: 16px; background: var(--fill); box-shadow: inset 0 0 0 0.5px var(--glass-edge); padding: 14px 16px; }
+.tonight-card__title { font-family: var(--ui); }
+
+/* Content inside a panel settles in just after the panel itself. */
+.archive.is-open .archive__body > * { animation: glass-rise 0.55s var(--ease-apple) both; }
+.archive.is-open .archive__body > :nth-child(2) { animation-delay: 0.04s; }
+.archive.is-open .archive__body > :nth-child(3) { animation-delay: 0.08s; }
+.archive.is-open .archive__body > :nth-child(n + 4) { animation-delay: 0.12s; }
+
+@keyframes glass-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ------------------------------------------------------------- tour caption */
+
+.caption {
+  padding: 16px 22px 14px;
+  border-radius: var(--radius-card);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 0.5px solid var(--glass-edge);
+  box-shadow: var(--glass-rim), var(--glass-shadow);
+  transform: translate(-50%, 16px) scale(0.97);
+  transition: opacity 0.4s var(--ease-apple-out), transform 0.6s var(--ease-apple);
+}
+.caption.is-active { transform: translate(-50%, 0); }
+.caption__text { text-shadow: none; margin: 8px 0 12px; }
+.caption__step { font-family: var(--ui); font-weight: 600; letter-spacing: 0.16em; }
+
+/* ------------------------------------------------------------------ intro */
+
+.intro { background: radial-gradient(ellipse at 50% 55%, rgba(5, 5, 5, 0.35), rgba(5, 5, 5, 0.82) 75%); }
+.intro__inner {
+  padding: 44px 44px 38px;
+  border-radius: 28px;
+  animation: glass-rise 0.9s var(--ease-apple) backwards;
+}
+.intro.is-hidden .intro__inner { transform: scale(1.04); transition: transform 0.9s var(--ease-apple); }
+.intro__eyebrow, .intro__hints { font-family: var(--ui); }
+.intro__hints b { font-family: var(--ui); font-weight: 600; }
+
+/* -------------------------------------------------------------- sky view */
+
+.sky__time { padding: 5px; }
+.sky__step { font-family: var(--ui); font-weight: 500; transition: background 0.2s var(--ease-apple-out), transform 0.35s var(--ease-apple); }
+.sky__date { font-family: var(--ui); }
+.sky__loc { font-family: var(--ui); font-weight: 500; }
+
+.sky__card {
+  border-radius: var(--radius-card);
+  border-top-color: var(--glass-edge);
+  transform: translateY(18px) scale(0.97);
+  transform-origin: bottom left;
+  filter: blur(6px);
+  transition: opacity 0.35s var(--ease-apple-out), transform 0.6s var(--ease-apple), filter 0.45s var(--ease-apple-out);
+}
+.sky.has-card .sky__card { filter: none; }
+.sky__card-kind { font-family: var(--ui); font-weight: 600; letter-spacing: 0.14em; }
+.sky__card-en, .sky__stat-k { font-family: var(--ui); }
+.sky__card-stats, .sky__card-times { border-top: 0.5px solid var(--glass-edge); }
+.sky__stat, .sky__time-cell { border-bottom: 0.5px solid var(--glass-edge); }
+
+.sky-pick {
+  border-radius: 14px;
+  padding: 9px 14px;
+  transition: background 0.25s var(--ease-apple-out), border-color 0.25s var(--ease-apple-out), transform 0.35s var(--ease-apple);
+  animation: glass-rise 0.5s var(--ease-apple) backwards;
+}
+.sky-pick:nth-child(2) { animation-delay: 0.03s; }
+.sky-pick:nth-child(3) { animation-delay: 0.06s; }
+.sky-pick:nth-child(4) { animation-delay: 0.09s; }
+.sky-pick:nth-child(n + 5) { animation-delay: 0.12s; }
+.sky-pick:hover { background: var(--fill-hover); border-color: var(--glass-edge-strong); }
+.sky__picks-head { font-family: var(--ui); font-weight: 600; letter-spacing: 0.06em; }
+.sky__locmenu .chip { animation: glass-pop 0.4s var(--ease-apple) both; }
+
+/* ----------------------------------------------------------------- mobile */
+
+@media (max-width: 900px) {
+  /* The archive becomes a bottom sheet with a grabber. */
+  .archive {
+    /* Restore the sheet geometry (the desktop insets above would otherwise win). */
+    top: auto;
+    bottom: 0;
+    height: 60vh;
+    border-radius: 24px 24px 0 0;
+    border-bottom: 0;
+    transform: translateY(40px);
+    transform-origin: bottom center;
+  }
+  .archive::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 38px;
+    height: 5px;
+    margin-left: -19px;
+    border-radius: 999px;
+    background: rgba(255, 244, 228, 0.28);
+  }
+  .archive__body { padding-top: 30px; }
+  .intro__inner { padding: 32px 24px 28px; border-radius: 24px; }
+}
+
+/* ------------------------------------------------------------ accessibility */
+
+/* Without backdrop blur, glass would just be a see-through tint: make it solid. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .archive, .sky__card, .search__results, .services__menu, .intro__inner, .caption { background: rgba(22, 19, 16, 0.96); }
+  .search input, .sky__time, .sky-pick, .sky__tools .chip, .topbar .btn--ghost, .topbar .chip, .topbar .services > summary { background: rgba(22, 19, 16, 0.9); }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .archive, .sky__card, .search__results, .services__menu, .intro__inner, .caption { background: rgba(22, 19, 16, 0.97); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .search input, .sky__time, .sky-pick, .sky__tools .chip, .topbar .btn--ghost, .topbar .chip, .topbar .services > summary { background: rgba(26, 22, 19, 0.95); backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0s !important; }
+  .archive, .sky__card { filter: none; }
+}
