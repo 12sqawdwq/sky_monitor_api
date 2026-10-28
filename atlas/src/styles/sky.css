@@ -23,18 +23,20 @@ body[data-mode='sky'] :is(.topbar, .ladder, .readout, .labels, .archive, .captio
   background: linear-gradient(to bottom, rgba(5, 5, 5, 0.78), transparent);
   pointer-events: none;
 }
-.sky__title { font-family: var(--serif); font-size: 20px; letter-spacing: 0.22em; }
+.sky__title { font-family: var(--serif); font-size: 20px; font-weight: 600; letter-spacing: 0.1em; line-height: 1.2; white-space: nowrap; }
 .sky__loc {
   appearance: none;
   background: none;
   border: 0;
   padding: 2px 0;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--copper);
+  font-family: var(--ui);
+  font-size: 12px;
+  color: var(--ink-muted);
   cursor: pointer;
   text-align: left;
+  white-space: nowrap;
 }
+.sky__loc:hover { color: var(--ink); }
 .sky__loc::after { content: ' ▾'; color: var(--ink-faint); }
 .sky__locmenu { position: absolute; top: 74px; left: var(--gutter); display: flex; gap: 6px; pointer-events: auto; }
 .sky__locmenu[hidden] { display: none; }
@@ -90,7 +92,7 @@ body[data-mode='sky'] :is(.topbar, .ladder, .readout, .labels, .archive, .captio
 }
 .sky__scrub::-webkit-slider-runnable-track { height: 1px; background: linear-gradient(to right, transparent, var(--line-bright) 15%, var(--line-bright) 85%, transparent); }
 .sky__scrub::-moz-range-track { height: 1px; background: var(--line-bright); }
-.sky__scrub::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px rgba(217, 163, 91, 0.8); }
+.sky__scrub::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: var(--amber); }
 .sky__scrub::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: var(--amber); }
 
 /* --------------------------------------------------------------- labels */
@@ -222,7 +224,6 @@ body[data-mode='sky'] :is(.topbar, .ladder, .readout, .labels, .archive, .captio
   height: 38px;
   border-radius: 50%;
   border: 1px solid var(--amber);
-  box-shadow: 0 0 12px rgba(217, 163, 91, 0.45);
   animation: sky-pulse 2.4s ease-in-out infinite;
 }
 @keyframes sky-pulse {
@@ -250,9 +251,9 @@ body[data-mode='sky'] :is(.topbar, .ladder, .readout, .labels, .archive, .captio
 .sky:not(.has-card) .sky__card * { pointer-events: none; }
 .sky.has-card .sky__card { opacity: 1; transform: none; pointer-events: auto; }
 .sky__card-close { position: absolute; top: 12px; right: 12px; }
-.sky__card-kind { font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--copper); }
-.sky__card-title { font-family: var(--serif); font-size: 24px; font-weight: 600; letter-spacing: 0.05em; margin: 6px 36px 2px 0; }
-.sky__card-en { font-family: var(--mono); font-size: 10.5px; color: var(--ink-muted); }
+.sky__card-kind { font-family: var(--ui); font-size: 12px; font-weight: 500; color: var(--ink-muted); }
+.sky__card-title { font-family: var(--serif); font-size: 24px; font-weight: 600; letter-spacing: 0.04em; margin: 4px 36px 2px 0; }
+.sky__card-en { font-family: var(--ui); font-size: 12px; color: var(--ink-muted); }
 .sky__card-status { margin: 12px 0 10px; font-size: 13px; color: var(--ink-muted); padding-left: 12px; position: relative; }
 .sky__card-status::before {
   content: '';
@@ -266,15 +267,15 @@ body[data-mode='sky'] :is(.topbar, .ladder, .readout, .labels, .archive, .captio
   background: var(--ink-faint);
 }
 .sky__card-status.is-up { color: var(--ink); }
-.sky__card-status.is-up::before { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+.sky__card-status.is-up::before { background: var(--amber); }
 .sky__card-stats, .sky__card-times { display: grid; grid-template-columns: repeat(2, 1fr); border-top: 1px solid var(--line); }
 .sky__card-times { grid-template-columns: repeat(3, 1fr); }
 .sky__stat, .sky__time-cell { display: flex; flex-direction: column; gap: 3px; padding: 9px 0; border-bottom: 1px dashed rgba(52, 52, 47, 0.8); }
-.sky__stat-k { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; color: var(--ink-faint); }
-.sky__stat-v { font-family: var(--mono); font-size: 14px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.sky__stat-k { font-family: var(--ui); font-size: 11.5px; color: var(--ink-muted); }
+.sky__stat-v { font-family: var(--ui); font-size: 14.5px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .sky__card-note { grid-column: 1 / -1; font-size: 12.5px; color: var(--ink-dim); margin: 10px 0; }
 .sky__card-actions { display: flex; gap: 8px; margin-top: 14px; }
-.sky__card-actions .btn { padding: 7px 14px; font-size: 11px; }
+.sky__card-actions .btn { min-height: 32px; padding: 0 12px; font-size: 12.5px; }
 
 /* --------------------------------------------------- recommendations */
 
@@ -288,9 +289,9 @@ body[data-mode='sky'] :is(.topbar, .ladder, .readout, .labels, .archive, .captio
   transition: opacity 0.3s ease;
 }
 .sky.has-card .sky__picks { left: calc(var(--gutter) + 380px); transform: none; width: min(560px, calc(100% - 400px - 2 * var(--gutter))); }
-.sky__picks-head { display: flex; justify-content: space-between; gap: 10px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; color: var(--ink-muted); margin-bottom: 8px; }
-.sky__picks-head > :first-child { color: var(--copper); flex: none; }
-.sky__picks-status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.04em; }
+.sky__picks-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-family: var(--ui); font-size: 12px; color: var(--ink-muted); margin-bottom: 8px; padding: 0 4px; text-shadow: 0 0 6px #000; }
+.sky__picks-head > :first-child { font-weight: 600; color: var(--ink-dim); flex: none; }
+.sky__picks-status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-faint); }
 .sky__picks-list { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; -webkit-mask-image: linear-gradient(to right, #000 92%, transparent); mask-image: linear-gradient(to right, #000 92%, transparent); }
 .sky__picks-list::-webkit-scrollbar { display: none; }
 .sky-pick {
@@ -309,7 +310,7 @@ body[data-mode='sky'] :is(.topbar, .ladder, .readout, .labels, .archive, .captio
 }
 .sky-pick:hover { border-color: var(--copper); background: rgba(197, 138, 85, 0.12); }
 .sky-pick__name { font-family: var(--serif); font-size: 13.5px; color: var(--ink); }
-.sky-pick__pos { font-family: var(--mono); font-size: 10.5px; color: var(--amber); }
+.sky-pick__pos { font-family: var(--mono); font-size: 11px; color: var(--ink-muted); }
 .sky-pick--planet .sky-pick__name { color: var(--brass); }
 .sky__picks-empty { font-size: 12px; color: var(--ink-muted); padding: 8px 0; }
 
@@ -331,3 +332,4 @@ html[lang='en'] .sky-label--sign .sky-label__text { letter-spacing: 0.12em; }
 html[lang='en'] .sky-label--mansion .sky-label__text { letter-spacing: 0.04em; }
 html[lang='en'] .sky-label--xiang .sky-label__text { letter-spacing: 0.2em; text-transform: uppercase; font-size: 11px; }
 html[lang='en'] .sky-label--cardinal .sky-label__text { letter-spacing: 0.04em; }
+html[lang='en'] .sky__title { letter-spacing: 0; }

@@ -1039,7 +1039,8 @@ export class SkyView {
     const controller = new AbortController();
     this.picksAbort = controller;
     const token = this.picks.begin(key);
-    this.picksStatus.textContent = t('正在请求星图后端…', 'Asking the sky backend…');
+    this.picksStatus.textContent = t('正在载入…', 'Loading…');
+    this.picksStatus.title = '';
     try {
       const chart = await fetchSkyChart(observer, controller.signal, new Date(picksBucket(date)));
       if (controller.signal.aborted) return;
@@ -1047,7 +1048,8 @@ export class SkyView {
       this.showBackendPicks(chart.objects);
     } catch (error) {
       if (controller.signal.aborted) return;
-      this.renderPicks(this.localPicks(date), t(`后端不可达（${(error as Error).message}），本地计算`, `Backend unreachable (${(error as Error).message}); computed locally`));
+      this.renderPicks(this.localPicks(date), t('本地计算 · 后端未连接', 'Computed locally · backend offline'));
+      this.picksStatus.title = (error as Error).message;
     } finally {
       // Cancelled (the view closed) or failed: the next visit asks again.
       this.picks.release(token);

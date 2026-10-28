@@ -3,6 +3,9 @@
  * over the sky, hairline edges with a lit top, soft depth, continuous corners and
  * spring-like easing. Loaded last; it restyles surfaces and motion, not layout.
  * The palette stays warm (no blue/purple).
+ *
+ * Only panels are glass. Controls are quiet fills on one 32px height and one radius scale,
+ * so the sky stays the brightest thing on screen; amber marks state, never decoration.
  */
 
 :root {
@@ -28,14 +31,15 @@
   --fill-press: rgba(255, 244, 228, 0.16);
   --fill-tint: rgba(217, 163, 91, 0.2);
   --fill-tint-hover: rgba(217, 163, 91, 0.3);
-  --radius-panel: 22px;
-  --radius-card: 18px;
-  --radius-menu: 14px;
-  --radius-control: 11px;
+  --radius-panel: 16px;
+  --radius-card: 14px;
+  --radius-menu: 12px;
+  --radius-control: 10px;
+  --radius-row: 8px;
+  --control-h: 32px;
   /* iOS sheet / spring curves. */
   --ease-apple: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-apple-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
 }
 
 /* ------------------------------------------------------------- materials */
@@ -61,21 +65,25 @@
 .topbar .btn--ghost,
 .topbar .chip,
 .topbar .services > summary {
-  background: var(--glass-sheen), var(--glass-thin);
+  background: var(--glass-thin);
   -webkit-backdrop-filter: var(--glass-blur-thin);
   backdrop-filter: var(--glass-blur-thin);
   border: 0.5px solid var(--glass-edge);
-  box-shadow: var(--glass-rim), var(--glass-shadow-soft);
+  box-shadow: none;
 }
 
 /* --------------------------------------------------------------- controls */
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
   font-family: var(--ui);
   font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.01em;
-  padding: 9px 18px;
+  letter-spacing: 0;
+  padding: 0 16px;
   border-radius: var(--radius-control);
   border: 0.5px solid rgba(217, 163, 91, 0.45);
   background: var(--fill-tint);
@@ -93,10 +101,14 @@
 .ladder__stop:active .ladder__dot { transform: scale(0.96); transition-duration: 0.12s; }
 
 .chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--ui);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   padding: 6px 12px;
+  border-radius: var(--radius-control);
   color: var(--ink-dim);
   transition: background 0.25s var(--ease-apple-out), border-color 0.25s var(--ease-apple-out), color 0.25s var(--ease-apple-out), transform 0.35s var(--ease-apple);
 }
@@ -114,6 +126,18 @@
 }
 .icon-btn:hover { background: var(--fill-hover); color: var(--ink); }
 
+/* Height only: display stays with the base rules so responsive `display: none` still wins. */
+.topbar .btn, .topbar .chip, .topbar .services > summary, .sky__tools .chip, .sky__locmenu .chip, .sky__time > .chip {
+  height: var(--control-h);
+  min-height: 0;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.topbar .services > summary { display: inline-flex; }
+.sky__time > .chip { height: 28px; border-radius: var(--radius-row); }
+.sky__tools .icon-btn { width: var(--control-h); height: var(--control-h); border-radius: var(--radius-control); }
+
 .btn:focus-visible, .chip:focus-visible, .icon-btn:focus-visible, .ladder__stop:focus-visible, .sky-pick:focus-visible, .search__row:focus-visible {
   outline: 2px solid rgba(217, 163, 91, 0.75);
   outline-offset: 2px;
@@ -122,14 +146,15 @@
 /* ----------------------------------------------------------------- search */
 
 .search input {
+  height: 36px;
   font-family: var(--ui);
   font-size: 13.5px;
-  padding: 10px 36px 10px 16px;
-  border-radius: 999px;
+  padding: 0 36px 0 14px;
+  border-radius: var(--radius-control);
   transition: background 0.3s var(--ease-apple-out), border-color 0.3s var(--ease-apple-out), box-shadow 0.3s var(--ease-apple-out);
 }
-.search input:focus { background: var(--glass-sheen), var(--glass); border-color: rgba(217, 163, 91, 0.55); box-shadow: var(--glass-rim), 0 0 0 4px rgba(217, 163, 91, 0.12), var(--glass-shadow-soft); }
-.search__kbd { right: 12px; border-radius: 6px; border-color: var(--glass-edge); font-family: var(--ui); }
+.search input:focus { background: var(--glass); border-color: rgba(217, 163, 91, 0.55); box-shadow: 0 0 0 3px rgba(217, 163, 91, 0.12); }
+.search__kbd { right: 10px; border-radius: 5px; border-color: var(--glass-edge); font-family: var(--ui); }
 
 .search__results {
   top: calc(100% + 8px);
@@ -143,7 +168,7 @@
   transition: opacity 0.2s var(--ease-apple-out), transform 0.35s var(--ease-apple), visibility 0s linear 0.35s;
 }
 .search.has-results .search__results { opacity: 1; visibility: visible; transform: none; transition: opacity 0.22s var(--ease-apple-out), transform 0.45s var(--ease-apple), visibility 0s; }
-.search__row { border: 0; border-radius: 9px; padding: 9px 12px; transition: background 0.18s var(--ease-apple-out); }
+.search__row { border: 0; border-radius: var(--radius-row); padding: 9px 12px; transition: background 0.18s var(--ease-apple-out); }
 .search__row.is-active, .search__row:hover { background: var(--fill-hover); }
 .search__meta { font-family: var(--ui); font-size: 11px; }
 
@@ -155,9 +180,8 @@
   transform-origin: top right;
   animation: glass-pop 0.42s var(--ease-apple) both;
 }
-.services__item { border-radius: 10px; transition: background 0.18s var(--ease-apple-out); }
+.services__item { border-radius: var(--radius-row); transition: background 0.18s var(--ease-apple-out); }
 .services__item:hover, .services__item:focus-visible { background: var(--fill-hover); }
-.services__group { font-family: var(--ui); font-weight: 600; letter-spacing: 0.08em; color: var(--ink-muted); }
 .services[open] > summary { background: var(--fill-hover); }
 
 @keyframes glass-pop {
@@ -181,26 +205,23 @@
 .archive::before { display: none; }
 .archive.is-open { transform: none; filter: none; }
 .archive__close { top: 16px; right: 16px; }
-.archive__body { padding: 28px 24px 28px; }
+.archive__body { padding: 24px; }
 .archive__head { border-bottom: 0.5px solid var(--glass-edge); }
-.archive__kind { font-family: var(--ui); font-weight: 600; letter-spacing: 0.14em; }
 .archive__en { font-family: var(--ui); font-size: 12px; }
 /* Grouped values, like an inset list. */
 .archive__stats {
-  margin: 18px 0 0;
-  padding: 2px 14px;
+  margin: 16px 0 0;
+  padding: 0 16px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--fill);
   box-shadow: inset 0 0 0 0.5px var(--glass-edge);
 }
 .stat { border-bottom: 0.5px solid var(--glass-edge); }
-.stat dt { font-family: var(--ui); font-size: 11px; letter-spacing: 0.02em; }
-.archive__facts { border-top: 0; border-radius: 14px; background: var(--fill); padding: 0 14px; box-shadow: inset 0 0 0 0.5px var(--glass-edge); }
+.archive__facts { border-top: 0; border-radius: 12px; background: var(--fill); padding: 0 16px; box-shadow: inset 0 0 0 0.5px var(--glass-edge); }
 .archive__facts li { border-bottom: 0.5px solid var(--glass-edge); }
 .archive__facts li:last-child { border-bottom: 0; }
-.tonight-card { border: 0; border-radius: 16px; background: var(--fill); box-shadow: inset 0 0 0 0.5px var(--glass-edge); padding: 14px 16px; }
-.tonight-card__title { font-family: var(--ui); }
+.tonight-card { border: 0; border-radius: 12px; background: var(--fill); box-shadow: inset 0 0 0 0.5px var(--glass-edge); padding: 16px; }
 
 /* Content inside a panel settles in just after the panel itself. */
 .archive.is-open .archive__body > * { animation: glass-rise 0.55s var(--ease-apple) both; }
@@ -228,24 +249,23 @@
 }
 .caption.is-active { transform: translate(-50%, 0); }
 .caption__text { text-shadow: none; margin: 8px 0 12px; }
-.caption__step { font-family: var(--ui); font-weight: 600; letter-spacing: 0.16em; }
 
 /* ------------------------------------------------------------------ intro */
 
 .intro { background: radial-gradient(ellipse at 50% 55%, rgba(5, 5, 5, 0.35), rgba(5, 5, 5, 0.82) 75%); }
 .intro__inner {
-  padding: 44px 44px 38px;
-  border-radius: 28px;
+  padding: 48px 48px 40px;
+  border-radius: 20px;
   animation: glass-rise 0.9s var(--ease-apple) backwards;
 }
 .intro.is-hidden .intro__inner { transform: scale(1.04); transition: transform 0.9s var(--ease-apple); }
-.intro__eyebrow, .intro__hints { font-family: var(--ui); }
+.intro__hints { font-family: var(--ui); }
 .intro__hints b { font-family: var(--ui); font-weight: 600; }
 
 /* -------------------------------------------------------------- sky view */
 
-.sky__time { padding: 5px; }
-.sky__step { font-family: var(--ui); font-weight: 500; transition: background 0.2s var(--ease-apple-out), transform 0.35s var(--ease-apple); }
+.sky__time { padding: 4px; border-radius: 12px; }
+.sky__step { font-family: var(--ui); font-weight: 500; border-radius: var(--radius-row); transition: background 0.2s var(--ease-apple-out), transform 0.35s var(--ease-apple); }
 .sky__date { font-family: var(--ui); }
 .sky__loc { font-family: var(--ui); font-weight: 500; }
 
@@ -258,14 +278,12 @@
   transition: opacity 0.35s var(--ease-apple-out), transform 0.6s var(--ease-apple), filter 0.45s var(--ease-apple-out);
 }
 .sky.has-card .sky__card { filter: none; }
-.sky__card-kind { font-family: var(--ui); font-weight: 600; letter-spacing: 0.14em; }
-.sky__card-en, .sky__stat-k { font-family: var(--ui); }
 .sky__card-stats, .sky__card-times { border-top: 0.5px solid var(--glass-edge); }
 .sky__stat, .sky__time-cell { border-bottom: 0.5px solid var(--glass-edge); }
 
 .sky-pick {
-  border-radius: 14px;
-  padding: 9px 14px;
+  border-radius: 12px;
+  padding: 8px 12px;
   transition: background 0.25s var(--ease-apple-out), border-color 0.25s var(--ease-apple-out), transform 0.35s var(--ease-apple);
   animation: glass-rise 0.5s var(--ease-apple) backwards;
 }
@@ -274,7 +292,6 @@
 .sky-pick:nth-child(4) { animation-delay: 0.09s; }
 .sky-pick:nth-child(n + 5) { animation-delay: 0.12s; }
 .sky-pick:hover { background: var(--fill-hover); border-color: var(--glass-edge-strong); }
-.sky__picks-head { font-family: var(--ui); font-weight: 600; letter-spacing: 0.06em; }
 .sky__locmenu .chip { animation: glass-pop 0.4s var(--ease-apple) both; }
 
 /* ----------------------------------------------------------------- mobile */
@@ -286,7 +303,7 @@
     top: auto;
     bottom: 0;
     height: 60vh;
-    border-radius: 24px 24px 0 0;
+    border-radius: 16px 16px 0 0;
     border-bottom: 0;
     transform: translateY(40px);
     transform-origin: bottom center;
@@ -303,7 +320,12 @@
     background: rgba(255, 244, 228, 0.28);
   }
   .archive__body { padding-top: 30px; }
-  .intro__inner { padding: 32px 24px 28px; border-radius: 24px; }
+  /* Phone toolbars: slightly smaller controls so the title keeps its line. */
+  .sky__tools { gap: 4px; }
+  .sky__tools .chip { height: 30px; padding: 0 9px; font-size: 12px; }
+  .sky__tools .icon-btn { width: 30px; height: 30px; }
+  .topbar .btn, .topbar .chip, .topbar .services > summary { padding: 0 10px; }
+  .intro__inner { padding: 32px 24px; border-radius: 16px; }
 }
 
 /* ------------------------------------------------------------ accessibility */

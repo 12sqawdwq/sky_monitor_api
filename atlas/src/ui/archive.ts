@@ -94,10 +94,10 @@ export class ArchivePanel {
     body.appendChild(head);
 
     const stats = el('dl', 'archive__stats');
-    const addStat = (label: string, value: string, unit?: string) => {
+    const addStat = (label: string, value: string, unit?: string, coord = false) => {
       const cell = el('div', 'stat');
       const dd = el('dd');
-      dd.append(el('span', 'stat__value', value));
+      dd.append(el('span', coord ? 'stat__value stat__value--coord' : 'stat__value', value));
       if (unit) dd.append(el('span', 'stat__unit', unit));
       cell.append(el('dt', undefined, label), dd);
       stats.appendChild(cell);
@@ -111,7 +111,7 @@ export class ArchivePanel {
     if (object.spect) addStat(t('光谱型', 'Spectral type'), object.spect);
     if (object.con) addStat(t('星座', 'Constellation'), constellationName(object.con));
     if (object.ra !== undefined && object.dec !== undefined && object.kind !== 'planet') {
-      addStat(t('赤经 / 赤纬', 'RA / Dec'), `${formatRa(object.ra)}  ${formatDec(object.dec)}`);
+      addStat(t('赤经 / 赤纬', 'RA / Dec'), `${formatRa(object.ra)} ${formatDec(object.dec)}`, undefined, true);
     }
     if (stats.childElementCount) body.appendChild(stats);
 
