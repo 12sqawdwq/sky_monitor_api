@@ -13,7 +13,11 @@ export class SearchBox {
   private active = 0;
   onSelect: (object: AtlasObject) => void = () => {};
 
-  constructor(private root: HTMLElement, private objects: () => AtlasObject[]) {
+  /**
+   * `hidden` entries (easter eggs) never take part in fuzzy matching: one appears only when the
+   * query is exactly its name.
+   */
+  constructor(private root: HTMLElement, private objects: () => AtlasObject[], private hidden: () => AtlasObject[] = () => []) {
     this.input = root.querySelector('input') as HTMLInputElement;
     this.results = root.querySelector('.search__results') as HTMLElement;
     this.input.addEventListener('input', () => this.update());
@@ -50,7 +54,8 @@ export class SearchBox {
       if (score >= 0) scored.push({ object, score: score + object.priority * 2 - (object.mag ?? 3) * 0.5 });
     }
     scored.sort((a, b) => b.score - a.score);
-    this.matches = scored.slice(0, 8).map(entry => entry.object);
+    const exact = this.hidden().filter(object => [object.zh, object.en ?? '', object.nameEn ?? ''].some(name => name && norm(name) === q));
+    this.matches = [...exact, ...scored.map(entry => entry.object)].slice(0, 8);
     this.active = 0;
     this.render();
   }

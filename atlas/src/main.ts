@@ -74,7 +74,7 @@ function eggObjects(): AtlasObject[] {
     return [{ ...target, id: egg.id, zh: egg.zh, en: egg.en ?? egg.zh, nameEn: egg.en ?? egg.zh, subEn: undefined, des: egg.des, priority: 100 }];
   });
 }
-const search = new SearchBox($('#search'), () => (EASTER_EGGS.length ? [...objects, ...eggObjects()] : objects));
+const search = new SearchBox($('#search'), () => objects, eggObjects);
 skyView = new SkyView(renderer, {
   stage,
   host: $('.atlas'),
